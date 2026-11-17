@@ -12,7 +12,7 @@
   "dependencies": {
     "@fastify/jwt": "^10.2.8",
     "bcryptjs": "^3.0.3",
-    "better-sqlite3": "^13.2.0",
+    "better-sqlite3": "12.11.1",
     "drizzle-orm": "^0.45.4",
     "fastify": "^5.12.8",
     "zod": "^4.6.7"

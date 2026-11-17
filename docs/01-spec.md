@@ -35,7 +35,7 @@ Login por e-mail e senha. Na demonstração, contas `@unimater.edu` criadas pelo
 | **Horário fixo** | Dia da semana + horário + sala em que a disciplina acontece. Uma disciplina pode ter vários. |
 | **Aula** | Uma ocorrência concreta: **turma + data + horário**. Guarda a disciplina **prevista** (do calendário original) e a disciplina **atual** (o que vai acontecer). Unidade de contagem é **aula**, não hora. |
 | **Grupo de aula** | As aulas de uma disciplina compartilhada no mesmo dia e horário (uma por turma). Operações sobre uma aula compartilhada atingem o grupo inteiro. |
-| **Horário vago** | Turma + data + horário sem aula acontecendo: não existe aula ali, ou a aula ficou **vaga** por uma troca. |
+| **Horário vago** | Turma + data + horário sem aula acontecendo: não existe aula ali, a aula ficou **vaga** por uma troca, ou a aula foi **cancelada**. |
 | **Pedido** | Solicitação de troca de um professor a um colega. Status: pendente, aprovado, recusado, cancelado ou expirado. |
 
 ## 5. Requisitos funcionais
@@ -76,7 +76,7 @@ Login por e-mail e senha. Na demonstração, contas `@unimater.edu` criadas pelo
 - **RN-03** **Choque de horário**: um professor não pode ter duas aulas acontecendo na mesma data e horário. As aulas de um mesmo grupo contam como uma.
 - **RN-04** Enquanto um pedido estiver **pendente**, **apenas as aulas envolvidas** ficam travadas: nenhum outro pedido, reposição ou cancelamento pode usá-las.
 - **RN-05** Só podem ser trocadas, canceladas ou usadas em reposição aulas que **ainda não começaram**. **Não há antecedência mínima**: vale trocar no mesmo dia.
-- **RN-06** Aulas em **feriado** ou **canceladas** não podem ser trocadas nem usadas em reposição.
+- **RN-06** Aulas em **feriado** não podem ser trocadas nem usadas em reposição. Aulas **canceladas** não podem ser trocadas, mas o horário que deixam fica **vago** e pode receber reposição de qualquer professor da turma; a aula cancelada continua registrada (e continua contando como débito de quem cancelou).
 - **RN-07** Um pedido pendente **expira** automaticamente quando alguma de suas aulas começa; as travas são liberadas.
 - **RN-08** Somente o professor **atual** de uma aula pode oferecê-la, cedê-la ou cancelá-la.
 - **RN-09** Aprovação e criação de pedidos são **atômicas**: duas operações simultâneas sobre a mesma aula nunca são efetivadas ambas.
@@ -122,6 +122,7 @@ O saldo é **sempre calculado a partir das aulas**; não existe valor guardado a
 | **CA-10** | Aula compartilhada (SI e ADS) passa a professor que só leciona em SI | SI recebe a aula do substituto; ADS fica vaga; a disciplina original conta 1 cedida em ADS. |
 | **CA-11** | Professor faz reposição em horário vago | Aula criada (ou vaga preenchida); disciplina conta 1 assumida; sem aprovação. |
 | **CA-12** | Reposição em horário ocupado, em feriado ou com o professor em choque | Recusada. |
+| **CA-21** | Professor X cancela uma aula e o professor Y faz reposição nesse horário | X continua com 1 cancelada; Y fica com 1 assumida; a TV mostra a reposição de Y no lugar da aula cancelada. |
 | **CA-13** | Professor cancela aula com motivo | Status cancelada; motivo registrado; disciplina conta 1 cancelada (saldo −1). Sem motivo, recusado. |
 | **CA-14** | Duas operações simultâneas sobre a mesma aula (dois pedidos, ou duas aprovações do mesmo pedido) | Exatamente uma é efetivada; nenhuma inconsistência em **50 repetições**. |
 | **CA-15** | Tentativa de trocar ou cancelar aula já iniciada | Recusada. |
@@ -166,3 +167,4 @@ Massa de dados: semestre 2026/2 (03/08 a 12/12/2026), 6 turmas (SI 2º, 4º, 6º
 | Aula em feriado conta como ministrada; cancelada vira débito | Regra da coordenação. |
 | Sem antecedência mínima | Prática real: trocas no mesmo dia. |
 | Sem aprovação da coordenação | Trocas ficam entre os professores. |
+| Horário de aula cancelada pode receber reposição | Prática real: o horário fica livre para outro professor da turma. |

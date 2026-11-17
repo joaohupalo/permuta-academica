@@ -100,7 +100,7 @@ erDiagram
 
 | Campo | Papel |
 |---|---|
-| `turma_id`, `data`, `horario` | Identificam a aula. **Índice único**: só existe uma aula por turma, data e horário. |
+| `turma_id`, `data`, `horario` | Identificam a aula. **Índice único parcial**: só existe uma aula *ativa* (não cancelada) por turma, data e horário. Uma aula cancelada pode dividir o horário com a reposição que ocupou o lugar dela. |
 | `grupo` | Liga as aulas de uma disciplina compartilhada no mesmo horário. |
 | `disciplina_prevista_id` | O que o calendário original mandava (nulo em reposição em horário vazio). |
 | `disciplina_atual_id`, `professor_atual_id` | O que vai acontecer de fato (nulos se a aula ficou vaga). |
@@ -115,7 +115,7 @@ erDiagram
 |---|---|---|
 | **Compensatória** | Grupo A recebe a disciplina/professor de B; grupo B recebe a de A. | Sim |
 | **Pontual** | Grupo A recebe a disciplina escolhida do professor B. | Sim |
-| **Reposição** | Cria aula em horário vazio da turma, ou preenche aula `vaga`. | Não |
+| **Reposição** | Cria aula em horário vazio ou de aula cancelada, ou preenche aula `vaga`. | Não |
 | **Cancelamento** | Aula vira `cancelada` com motivo. | Não |
 
 **Aula compartilhada (RN-02):** ao aplicar a disciplina X num grupo, cada aula do grupo recebe X **se a turma dela for atendida por X**; senão, fica `vaga`.

@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "a7db3619-0668-4111-9e0b-efffaa3c8c2d",
+  "id": "dc56fefa-5e42-4d79-9e12-c43be91c4de5",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "aula": {
@@ -532,6 +532,13 @@
           "type": "text",
           "primaryKey": false,
           "notNull": false,
+          "autoincrement": false
+        },
+        "resumo": {
+          "name": "resumo",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
           "autoincrement": false
         }
       },

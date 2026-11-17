@@ -91,7 +91,23 @@ export const pedido = sqliteTable('pedido', {
   status: text('status', { enum: STATUS_PEDIDO }).notNull().default('pendente'),
   criadoEm: text('criado_em').notNull(),
   respondidoEm: text('respondido_em'),
+  /** Descrição legível das aulas no momento do pedido (as aulas mudam depois da aprovação). */
+  resumo: text('resumo', { mode: 'json' }).$type<ResumoPedido>().notNull(),
 })
+
+export interface ResumoAula {
+  aulaId: number
+  turmas: string[]
+  data: string
+  horario: number
+  disciplina: string
+  professor: string
+}
+export interface ResumoPedido {
+  ofertada: ResumoAula
+  pedida?: ResumoAula
+  disciplinaDestino: string
+}
 
 export const evento = sqliteTable('evento', {
   id: integer('id').primaryKey({ autoIncrement: true }),

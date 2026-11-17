@@ -74,6 +74,7 @@ CREATE TABLE `pedido` (
 	`status` text DEFAULT 'pendente' NOT NULL,
 	`criado_em` text NOT NULL,
 	`respondido_em` text,
+	`resumo` text NOT NULL,
 	FOREIGN KEY (`solicitante_id`) REFERENCES `usuario`(`id`) ON UPDATE no action ON DELETE no action,
 	FOREIGN KEY (`destinatario_id`) REFERENCES `usuario`(`id`) ON UPDATE no action ON DELETE no action,
 	FOREIGN KEY (`aula_ofertada_id`) REFERENCES `aula`(`id`) ON UPDATE no action ON DELETE no action,

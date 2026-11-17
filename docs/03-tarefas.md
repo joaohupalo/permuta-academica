@@ -32,6 +32,7 @@
 | **T19** | Cadastros | Telas da coordenação para todos os cadastros, geração do calendário, importação CSV com prévia | RF-01, RF-02, CA-19 |
 | **T20** | Painel da TV | Grade semanal em tela cheia, alto contraste, destaques, relógio, rolagem automática, virada à meia-noite, `?data=` | CA-17, RNF-02, RNF-03 |
 | **T21** | README | Como rodar, contas de teste, roteiro da demonstração | RNF-01, RNF-04 |
+| **T23** | Identidade visual | Visual alinhado ao portal acadêmico da Unimater (JACAD): logo, paleta, fonte Roboto, menu lateral claro com ícones, barra superior com o usuário, cartões brancos; TV nas cores da instituição | RNF-03, RNF-04 |
 
 ## Etapa 5 — Validação
 

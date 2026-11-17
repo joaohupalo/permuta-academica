@@ -182,7 +182,23 @@ Erros seguem o formato `{ "erro": "mensagem legível" }`, com 400 (dados inváli
 3. O evento **não carrega dados**, só o aviso. Os dados sempre vêm do banco, então nenhuma tela fica divergente.
 4. O painel da TV também recarrega a cada 60 s, por segurança, e recalcula a semana à meia-noite.
 
-## 9. Como rodar
+## 9. Identidade visual
+
+O front segue o visual do portal do aluno da Unimater (JACAD), para o sistema parecer parte do ecossistema da instituição:
+
+| Elemento | Valor |
+|---|---|
+| Fonte | Roboto |
+| Fundo e menu lateral | `#f8f8f8`, divisórias `#ebebeb` |
+| Texto | `#4e5155` |
+| Ação principal (botões, links) | azul `#3c97fe` |
+| Marca (logo) | azul-marinho `#065086` e azul `#2088ca` |
+| Avisos de sucesso | verde-menta `#d9f5eb` |
+| Cartões | brancos, cantos pouco arredondados, sombra leve |
+
+As cores ficam numa paleta única (`marca`) em `web/src/index.css`; trocar a identidade visual é mexer só ali e no logo (`web/public/logo-unimater.png`).
+
+## 10. Como rodar
 
 ```bash
 npm install        # instala front e API

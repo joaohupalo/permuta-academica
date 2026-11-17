@@ -52,23 +52,37 @@ export function rotasPainel(app: FastifyInstance, ctx: Contexto) {
       .where(and(gte(aula.data, inicio), lte(aula.data, fim)))
       .all()
 
+    // Se uma reposição ocupou o horário de uma aula cancelada, a TV mostra a reposição "no lugar" da cancelada.
+    const chave = (l: (typeof linhas)[number]) => `${l.aula.turmaId}|${l.aula.data}|${l.aula.horario}`
+    const ativas = new Set(linhas.filter((l) => l.aula.status !== 'cancelada').map(chave))
+    const canceladas = new Map(linhas.filter((l) => l.aula.status === 'cancelada').map((l) => [chave(l), l]))
+    const visiveis = linhas.filter((l) => l.aula.status !== 'cancelada' || !ativas.has(chave(l)))
+
     return {
       hoje,
       semana: { inicio, fim },
       horarios: HORARIOS,
       dias,
       turmas: db.select().from(turma).orderBy(turma.curso, turma.nome).all().sort((a, b) => b.curso.localeCompare(a.curso) || a.nome.localeCompare(b.nome)),
-      aulas: linhas.map((l) => ({
-        turmaId: l.aula.turmaId,
-        data: l.aula.data,
-        horario: l.aula.horario,
-        sala: l.aula.sala,
-        tipo: classificar(l.aula),
-        disciplina: l.atual,
-        professor: l.professor,
-        previsto: l.aula.disciplinaPrevistaId !== l.aula.disciplinaAtualId && l.prevista ? { disciplina: l.prevista, professor: l.professorPrevisto } : null,
-        motivo: l.aula.motivo,
-      })),
+      aulas: visiveis.map((l) => {
+        const substituida = canceladas.get(chave(l))
+        return {
+          turmaId: l.aula.turmaId,
+          data: l.aula.data,
+          horario: l.aula.horario,
+          sala: l.aula.sala,
+          tipo: classificar(l.aula),
+          disciplina: l.atual,
+          professor: l.professor,
+          previsto:
+            l.aula.status !== 'cancelada' && substituida
+              ? { disciplina: `${substituida.atual} (cancelada)`, professor: substituida.professor }
+              : l.aula.disciplinaPrevistaId !== l.aula.disciplinaAtualId && l.prevista
+                ? { disciplina: l.prevista, professor: l.professorPrevisto }
+                : null,
+          motivo: l.aula.motivo,
+        }
+      }),
     }
   })
 }

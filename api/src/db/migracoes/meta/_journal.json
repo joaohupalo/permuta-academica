@@ -8,6 +8,13 @@
       "when": 1794943790233,
       "tag": "0000_inicial",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1794944207044,
+      "tag": "0001_reposicao_em_aula_cancelada",
+      "breakpoints": true
     }
   ]
 }

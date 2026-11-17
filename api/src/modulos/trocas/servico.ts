@@ -158,6 +158,7 @@ export function horariosVagos(ctx: Contexto, usuarioId: number, disciplinaId: nu
       .from(aula)
       .where(and(inArray(aula.turmaId, turmas), gte(aula.data, inicio)))
       .all()
+      .sort((x, y) => Number(x.status !== 'cancelada') - Number(y.status !== 'cancelada'))
       .map((l) => [`${l.turmaId}|${l.data}|${l.horario}`, l]),
   )
   const ocupado = new Set(
@@ -177,13 +178,17 @@ export function horariosVagos(ctx: Contexto, usuarioId: number, disciplinaId: nu
       if (inicioDaAula(data, horario) <= agora || ocupado.has(`${data}|${horario}`)) continue
       for (const t of turmas) {
         const l = existentes.get(`${t}|${data}|${horario}`)
-        if (l && (l.status !== 'vaga' || l.pedidoPendenteId)) continue
+        if (l && l.status !== 'cancelada' && (l.status !== 'vaga' || l.pedidoPendenteId)) continue
         resultado.push({
           turmaId: t,
           turma: n.turma(t),
           data,
           horario,
-          observacao: l ? `ficou vaga (era ${n.disciplina(l.disciplinaPrevistaId)})` : null,
+          observacao: !l
+            ? null
+            : l.status === 'cancelada'
+              ? `aula de ${n.disciplina(l.disciplinaAtualId)} cancelada`
+              : `ficou vaga (era ${n.disciplina(l.disciplinaPrevistaId)})`,
         })
         if (resultado.length >= 120) return resultado
       }
@@ -392,11 +397,14 @@ export function reporAula(ctx: Contexto, u: Usuario, e: EntradaReposicao) {
     if (inicioDaAula(e.data, e.horario) <= agora) throw conflito('Esse horário já começou ou já passou.')
     if (professorOcupado(tx, u.id, e.data, e.horario)) throw conflito('Choque de horário: você já tem aula nesse horário.')
 
-    const existente = tx
+    // A aula cancelada continua registrada (débito de quem cancelou); o horário dela fica livre (RN-06).
+    const noHorario = tx
       .select()
       .from(aula)
       .where(and(eq(aula.turmaId, e.turmaId), eq(aula.data, e.data), eq(aula.horario, e.horario)))
-      .get()
+      .all()
+    const existente = noHorario.find((l) => l.status !== 'cancelada')
+    const cancelada = noHorario.find((l) => l.status === 'cancelada')
     let id: number
     const antes: Aula[] = []
     if (existente) {
@@ -416,7 +424,7 @@ export function reporAula(ctx: Contexto, u: Usuario, e: EntradaReposicao) {
           turmaId: e.turmaId,
           data: e.data,
           horario: e.horario,
-          sala: e.sala ?? '',
+          sala: e.sala || cancelada?.sala || '',
           grupo: `r|${e.turmaId}|${e.data}|${e.horario}`,
           disciplinaPrevistaId: null,
           disciplinaAtualId: d.id,
@@ -425,6 +433,7 @@ export function reporAula(ctx: Contexto, u: Usuario, e: EntradaReposicao) {
         })
         .returning({ id: aula.id })
         .get().id
+      if (cancelada) antes.push({ ...cancelada, id })
     }
     const informativo = gerarInformativo(tx, antes, aulasPorIds(tx, [id]))
     registrar(tx, agora, {

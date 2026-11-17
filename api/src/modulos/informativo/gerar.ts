@@ -39,7 +39,7 @@ export function gerarInformativo(tx: Tx, antes: LinhaAula[], depois: LinhaAula[]
     const previsto = antigo
       ? antigo.status === 'vaga' || !antigo.disciplinaAtualId
         ? 'Sem aula'
-        : `${n.disciplina(antigo.disciplinaAtualId)} — ${n.pessoa(antigo.professorAtualId)}`
+        : `${n.disciplina(antigo.disciplinaAtualId)} — ${n.pessoa(antigo.professorAtualId)}${antigo.status === 'cancelada' ? ' (cancelada)' : ''}`
       : 'Sem aula'
     const linhas = [
       `Data: ${NOMES_DIAS[diaDaSemana(a.data)]}, ${formatarData(a.data)} — ${descreverHorario(a.horario)}`,

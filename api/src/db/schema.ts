@@ -1,3 +1,4 @@
+import { sql } from 'drizzle-orm'
 import { sqliteTable, integer, text, primaryKey, uniqueIndex, index } from 'drizzle-orm/sqlite-core'
 
 export const usuario = sqliteTable('usuario', {
@@ -71,7 +72,8 @@ export const aula = sqliteTable(
     pedidoPendenteId: integer('pedido_pendente_id'),
   },
   (t) => [
-    uniqueIndex('aula_turma_data_horario').on(t.turmaId, t.data, t.horario),
+    // Uma aula ativa por turma, data e horário. A cancelada pode dividir o horário com a reposição (RN-06).
+    uniqueIndex('aula_turma_data_horario_ativa').on(t.turmaId, t.data, t.horario).where(sql`status <> 'cancelada'`),
     index('aula_grupo').on(t.grupo),
     index('aula_data').on(t.data),
   ],

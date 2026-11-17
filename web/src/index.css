@@ -1,7 +1,27 @@
 @import "tailwindcss";
 
+/* Identidade visual da Unimater (portal JACAD). Trocar as cores aqui muda o sistema inteiro. */
 @theme {
-  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-sans: "Roboto", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
+
+  --color-marca-50: #eef6ff;
+  --color-marca-100: #d9eaff;
+  --color-marca-200: #b5d6ff;
+  --color-marca-300: #84bcfe;
+  --color-marca-400: #5aa7fe;
+  --color-marca-500: #3c97fe; /* botões e ações */
+  --color-marca-600: #2b85ee;
+  --color-marca-700: #2088ca; /* azul do logo */
+  --color-marca-800: #0b5f9c;
+  --color-marca-900: #065086; /* azul-marinho do logo */
+  --color-marca-950: #043a62;
+
+  --color-fundo: #f8f8f8;
+  --color-divisa: #ebebeb;
+  --color-texto: #4e5155;
+  --color-menta: #d9f5eb;
 }
 
-body { @apply bg-slate-50 text-slate-800 antialiased; }
+body {
+  @apply bg-fundo text-texto antialiased;
+}

@@ -144,7 +144,7 @@ function AbaSemestre() {
         </Botao>
       </Cartao>
       <Cartao>
-        <h3 className="font-semibold">Gerar calendário do semestre</h3>
+        <h3 className="font-medium">Gerar calendário do semestre</h3>
         <p className="mt-1 mb-4 text-sm text-slate-500">
           Cria uma aula para cada turma em cada data do semestre, a partir dos horários fixos das disciplinas. Datas de feriado já entram marcadas. Gerar de novo apaga as trocas registradas.
         </p>
@@ -191,7 +191,7 @@ function CrudSimples({
 
   return (
     <Cartao className="!p-0">
-      <div className="flex items-center justify-between border-b border-slate-200 px-5 py-3">
+      <div className="flex items-center justify-between border-b border-divisa px-5 py-3">
         <span className="text-sm text-slate-500">{itens.length} registro(s)</span>
         <div className="flex gap-2">
           {csv && (
@@ -204,7 +204,7 @@ function CrudSimples({
       </div>
       <table className="w-full text-sm">
         <thead>
-          <tr className="border-b border-slate-200 text-xs text-slate-500">
+          <tr className="border-b border-divisa text-xs text-slate-500">
             {colunas.map((c) => (
               <th key={c.titulo} className="px-5 py-2 text-left font-medium">
                 {c.titulo}
@@ -223,7 +223,7 @@ function CrudSimples({
               ))}
               <td className="px-5 text-right whitespace-nowrap">
                 {!semEditar && (
-                  <button className="mr-3 text-xs font-medium text-indigo-600 hover:underline" onClick={() => setEdicao({ ...x, senha: '' })}>
+                  <button className="mr-3 text-xs font-medium text-marca-600 hover:underline" onClick={() => setEdicao({ ...x, senha: '' })}>
                     Editar
                   </button>
                 )}
@@ -281,7 +281,7 @@ function ImportarCSV({ tipo, exemplo, aoFechar }: { tipo: string; exemplo: strin
   return (
     <Modal aberto titulo={`Importar ${tipo} por CSV`} aoFechar={aoFechar} largura="max-w-2xl">
       <p className="mb-2 text-sm text-slate-500">Primeira linha com os nomes das colunas. Exemplo:</p>
-      <pre className="mb-4 rounded-lg bg-slate-50 p-3 text-xs">{exemplo}</pre>
+      <pre className="mb-4 rounded bg-slate-50 p-3 text-xs">{exemplo}</pre>
       <input type="file" accept=".csv,text/csv" onChange={(e) => e.target.files?.[0] && ler(e.target.files[0])} className="mb-4 text-sm" />
       {erro && <Aviso>{erro}</Aviso>}
       {previa && (
@@ -290,7 +290,7 @@ function ImportarCSV({ tipo, exemplo, aoFechar }: { tipo: string; exemplo: strin
             {previa.validas} linha(s) válida(s){previa.erros.length ? ` · ${previa.erros.length} com problema` : ''}
           </Aviso>
           {previa.erros.length > 0 && (
-            <ul className="max-h-40 space-y-1 overflow-y-auto rounded-lg border border-red-200 bg-red-50 p-3 text-xs text-red-800">
+            <ul className="max-h-40 space-y-1 overflow-y-auto rounded border border-red-200 bg-red-50 p-3 text-xs text-red-800">
               {previa.erros.map((e: any) => (
                 <li key={e.linha}>
                   Linha {e.linha}: {e.erro}
@@ -299,7 +299,7 @@ function ImportarCSV({ tipo, exemplo, aoFechar }: { tipo: string; exemplo: strin
             </ul>
           )}
           {previa.previa.length > 0 && (
-            <div className="max-h-48 overflow-y-auto rounded-lg border border-slate-200 text-xs">
+            <div className="max-h-48 overflow-y-auto rounded border border-divisa text-xs">
               {previa.previa.map((p: any) => (
                 <div key={p.linha} className="border-b border-slate-100 px-3 py-1.5 last:border-0">
                   {Object.values(p.dados).join(' · ')}
@@ -336,13 +336,13 @@ function AbaDisciplinas() {
 
   return (
     <Cartao className="!p-0">
-      <div className="flex items-center justify-between border-b border-slate-200 px-5 py-3">
+      <div className="flex items-center justify-between border-b border-divisa px-5 py-3">
         <span className="text-sm text-slate-500">{disciplinas.length} disciplina(s)</span>
         <Botao onClick={() => setEd({ nome: '', professorId: '', totalAulas: 38, turmaIds: [], horarios: [{ diaSemana: 1, horario: 1, sala: '' }] })}>Adicionar</Botao>
       </div>
       <table className="w-full text-sm">
         <thead>
-          <tr className="border-b border-slate-200 text-xs text-slate-500">
+          <tr className="border-b border-divisa text-xs text-slate-500">
             <th className="px-5 py-2 text-left font-medium">Disciplina</th>
             <th className="px-5 py-2 text-left font-medium">Professor</th>
             <th className="px-5 py-2 text-left font-medium">Turmas</th>
@@ -360,7 +360,7 @@ function AbaDisciplinas() {
               <td className="px-5 text-xs text-slate-600">{d.horarios.map((h: any) => `${DIAS[h.diaSemana].slice(0, 3)} ${h.horario}º${h.sala ? ` (${h.sala})` : ''}`).join(' · ')}</td>
               <td className="px-5 text-right tabular-nums">{d.totalAulas}</td>
               <td className="px-5 text-right whitespace-nowrap">
-                <button className="mr-3 text-xs font-medium text-indigo-600 hover:underline" onClick={() => setEd({ ...d })}>
+                <button className="mr-3 text-xs font-medium text-marca-600 hover:underline" onClick={() => setEd({ ...d })}>
                   Editar
                 </button>
                 <button className="text-xs font-medium text-red-600 hover:underline" onClick={() => confirm('Remover esta disciplina?') && remover.mutate(d.id)}>
@@ -395,7 +395,7 @@ function AbaDisciplinas() {
             <Campo rotulo="Turmas" dica="Marque mais de uma para disciplina compartilhada (as turmas assistem juntas).">
               <div className="flex flex-wrap gap-2">
                 {turmas.map((t) => (
-                  <label key={t.id} className={`cursor-pointer rounded-lg border px-3 py-1.5 text-sm ${ed.turmaIds.includes(t.id) ? 'border-indigo-500 bg-indigo-50' : 'border-slate-200'}`}>
+                  <label key={t.id} className={`cursor-pointer rounded border px-3 py-1.5 text-sm ${ed.turmaIds.includes(t.id) ? 'border-marca-500 bg-marca-50' : 'border-divisa'}`}>
                     <input
                       type="checkbox"
                       className="mr-2"

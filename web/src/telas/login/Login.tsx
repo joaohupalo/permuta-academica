@@ -26,15 +26,13 @@ export function Login() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-indigo-50 to-slate-100 p-6">
+    <div className="flex min-h-screen items-center justify-center bg-fundo p-6">
       <div className="grid w-full max-w-4xl gap-6 md:grid-cols-2">
-        <form onSubmit={enviar} className="rounded-2xl bg-white p-8 shadow-sm">
-          <div className="mb-6 flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-600 font-bold text-white">PA</div>
-            <div>
-              <h1 className="text-xl font-semibold text-slate-900">Permuta Acadêmica</h1>
-              <p className="text-sm text-slate-500">Gestão de trocas de aula · SI e ADS</p>
-            </div>
+        <form onSubmit={enviar} className="rounded-sm bg-white p-8 shadow-[0_1px_3px_rgba(0,0,0,0.08)]">
+          <div className="mb-7 flex flex-col items-center text-center">
+            <img src="/logo-unimater.png" alt="Unimater" className="mb-4 h-14" />
+            <h1 className="text-xl font-normal text-texto">Permuta Acadêmica</h1>
+            <p className="text-sm text-slate-500">Gestão de trocas de aula · SI e ADS</p>
           </div>
           <div className="space-y-4">
             <Campo rotulo="E-mail institucional">
@@ -47,13 +45,13 @@ export function Login() {
             <Botao type="submit" disabled={enviando} className="w-full">
               {enviando ? 'Entrando…' : 'Entrar'}
             </Botao>
-            <a href="/tv" className="block text-center text-sm text-indigo-600 hover:underline">
+            <a href="/tv" className="block text-center text-sm text-marca-600 hover:underline">
               Abrir painel da TV (sem login)
             </a>
           </div>
         </form>
-        <div className="rounded-2xl bg-white/70 p-6">
-          <h2 className="mb-1 text-sm font-semibold text-slate-700">Contas da demonstração</h2>
+        <div className="rounded-sm border border-divisa bg-white/60 p-6">
+          <h2 className="mb-1 text-sm font-medium text-texto">Contas da demonstração</h2>
           <p className="mb-3 text-xs text-slate-500">Senha de todas: 123456. Clique para preencher.</p>
           <div className="max-h-96 space-y-1 overflow-y-auto">
             {contas.map((c) => (
@@ -64,9 +62,9 @@ export function Login() {
                   setEmail(c.email)
                   setSenha('123456')
                 }}
-                className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm hover:bg-white"
+                className="flex w-full items-center justify-between rounded px-3 py-2 text-left text-sm hover:bg-white"
               >
-                <span className="font-medium text-slate-800">{c.nome}</span>
+                <span className="text-texto">{c.nome}</span>
                 <span className="text-xs text-slate-500">{c.papel === 'admin' ? 'coordenação' : c.email}</span>
               </button>
             ))}

@@ -118,7 +118,7 @@ function FormTroca({ tipo, aulaInicial }: { tipo: 'compensatoria' | 'pontual'; a
 
         {aula && (
           <Cartao>
-            <div className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
+            <div className="mb-3 text-xs font-medium uppercase tracking-wide text-slate-500">
               2. Colegas disponíveis em {descreverAula(aula.data, aula.horario)}
             </div>
             {buscandoColegas && <p className="text-sm text-slate-500">Buscando…</p>}
@@ -127,11 +127,11 @@ function FormTroca({ tipo, aulaInicial }: { tipo: 'compensatoria' | 'pontual'; a
               {disponiveis.map((c) => (
                 <label
                   key={c.professorId}
-                  className={`flex cursor-pointer items-center gap-3 rounded-lg border p-3 ${destinatarioId === c.professorId ? 'border-indigo-500 bg-indigo-50' : 'border-slate-200 hover:bg-slate-50'}`}
+                  className={`flex cursor-pointer items-center gap-3 rounded border p-3 ${destinatarioId === c.professorId ? 'border-marca-500 bg-marca-50' : 'border-divisa hover:bg-slate-50'}`}
                 >
                   <input type="radio" checked={destinatarioId === c.professorId} onChange={() => setDestinatarioId(c.professorId)} />
                   <div className="flex-1">
-                    <div className="text-sm font-semibold">{c.nome}</div>
+                    <div className="text-sm font-medium">{c.nome}</div>
                     <div className="text-xs text-slate-500">{c.disciplinas.map((d: any) => `${d.nome} (${d.turmas.join(', ')})`).join(' · ')}</div>
                   </div>
                   <span className="text-xs font-medium text-emerald-600">✓ Disponível</span>
@@ -174,7 +174,7 @@ function FormTroca({ tipo, aulaInicial }: { tipo: 'compensatoria' | 'pontual'; a
       </div>
 
       <Cartao className="h-fit lg:sticky lg:top-8">
-        <div className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">Resumo da troca</div>
+        <div className="mb-3 text-xs font-medium uppercase tracking-wide text-slate-500">Resumo da troca</div>
         {!aula ? (
           <p className="text-sm text-slate-500">Escolha a aula para ver o resumo.</p>
         ) : (
@@ -210,10 +210,10 @@ function FormTroca({ tipo, aulaInicial }: { tipo: 'compensatoria' | 'pontual'; a
 
 function Linha({ titulo, antes, depois }: { titulo: string; antes: string; depois: string }) {
   return (
-    <div className="rounded-lg bg-slate-50 p-3">
-      <div className="font-semibold text-slate-800">{titulo}</div>
+    <div className="rounded bg-slate-50 p-3">
+      <div className="font-medium text-texto">{titulo}</div>
       <div className="text-xs text-slate-400 line-through">{antes}</div>
-      <div className="text-xs font-medium text-indigo-700">→ {depois}</div>
+      <div className="text-xs font-medium text-marca-700">→ {depois}</div>
     </div>
   )
 }

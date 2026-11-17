@@ -4,8 +4,8 @@ import { createContext, useCallback, useContext, useState, type ButtonHTMLAttrib
 
 type Variante = 'primario' | 'secundario' | 'perigo' | 'fantasma'
 const estilos: Record<Variante, string> = {
-  primario: 'bg-indigo-600 text-white hover:bg-indigo-700 disabled:bg-indigo-300',
-  secundario: 'bg-white text-slate-700 border border-slate-300 hover:bg-slate-50 disabled:text-slate-400',
+  primario: 'bg-marca-500 text-white hover:bg-marca-600 disabled:bg-marca-200',
+  secundario: 'bg-white text-texto border border-divisa hover:bg-fundo disabled:text-slate-400',
   perigo: 'bg-white text-red-700 border border-red-200 hover:bg-red-50 disabled:text-red-300',
   fantasma: 'text-slate-600 hover:bg-slate-100',
 }
@@ -14,20 +14,20 @@ export function Botao({ variante = 'primario', className = '', ...p }: ButtonHTM
   return (
     <button
       {...p}
-      className={`inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition disabled:cursor-not-allowed ${estilos[variante]} ${className}`}
+      className={`inline-flex items-center justify-center gap-2 rounded px-4 py-2 text-sm font-normal transition disabled:cursor-not-allowed ${estilos[variante]} ${className}`}
     />
   )
 }
 
 export function Cartao({ children, className = '' }: { children: ReactNode; className?: string }) {
-  return <div className={`rounded-xl border border-slate-200 bg-white p-5 ${className}`}>{children}</div>
+  return <div className={`rounded-sm bg-white p-5 shadow-[0_1px_3px_rgba(0,0,0,0.06)] ${className}`}>{children}</div>
 }
 
 export function Titulo({ titulo, subtitulo, acoes }: { titulo: string; subtitulo?: string; acoes?: ReactNode }) {
   return (
     <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
       <div>
-        <h1 className="text-2xl font-semibold text-slate-900">{titulo}</h1>
+        <h1 className="text-[22px] font-normal text-texto">{titulo}</h1>
         {subtitulo && <p className="mt-1 text-sm text-slate-500">{subtitulo}</p>}
       </div>
       {acoes}
@@ -37,7 +37,7 @@ export function Titulo({ titulo, subtitulo, acoes }: { titulo: string; subtitulo
 
 const cores = {
   cinza: 'bg-slate-100 text-slate-700',
-  azul: 'bg-indigo-100 text-indigo-800',
+  azul: 'bg-marca-100 text-marca-800',
   verde: 'bg-emerald-100 text-emerald-800',
   ambar: 'bg-amber-100 text-amber-800',
   vermelho: 'bg-red-100 text-red-800',
@@ -71,9 +71,9 @@ export function Modal({ aberto, aoFechar, titulo, children, largura = 'max-w-lg'
   if (!aberto) return null
   return (
     <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-900/40 p-4" onClick={aoFechar}>
-      <div className={`max-h-[90vh] w-full ${largura} overflow-y-auto rounded-2xl bg-white p-6 shadow-xl`} onClick={(e) => e.stopPropagation()}>
+      <div className={`max-h-[90vh] w-full ${largura} overflow-y-auto rounded bg-white p-6 shadow-xl`} onClick={(e) => e.stopPropagation()}>
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-slate-900">{titulo}</h2>
+          <h2 className="text-lg font-medium text-texto">{titulo}</h2>
           <button onClick={aoFechar} className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700" aria-label="Fechar">
             ✕
           </button>
@@ -86,12 +86,12 @@ export function Modal({ aberto, aoFechar, titulo, children, largura = 'max-w-lg'
 
 export function Abas<T extends string>({ abas, ativa, aoMudar }: { abas: { id: T; rotulo: ReactNode }[]; ativa: T; aoMudar: (id: T) => void }) {
   return (
-    <div className="mb-5 inline-flex rounded-lg bg-slate-100 p-1">
+    <div className="mb-5 inline-flex rounded bg-white p-1 shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
       {abas.map((a) => (
         <button
           key={a.id}
           onClick={() => aoMudar(a.id)}
-          className={`rounded-md px-4 py-1.5 text-sm font-medium transition ${ativa === a.id ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
+          className={`rounded-sm px-4 py-1.5 text-sm transition ${ativa === a.id ? 'bg-marca-500 text-white' : 'text-slate-500 hover:text-texto'}`}
         >
           {a.rotulo}
         </button>
@@ -111,15 +111,15 @@ export function Campo({ rotulo, children, dica }: { rotulo: string; children: Re
 }
 
 export const classeEntrada =
-  'w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100'
+  'w-full rounded border border-divisa bg-white px-3 py-2 text-sm outline-none focus:border-marca-500 focus:ring-2 focus:ring-marca-100'
 
 export function Aviso({ tipo = 'erro', children }: { tipo?: 'erro' | 'sucesso' | 'info'; children: ReactNode }) {
-  const c = { erro: 'border-red-200 bg-red-50 text-red-800', sucesso: 'border-emerald-200 bg-emerald-50 text-emerald-800', info: 'border-indigo-200 bg-indigo-50 text-indigo-800' }[tipo]
-  return <div className={`rounded-lg border px-4 py-3 text-sm ${c}`}>{children}</div>
+  const c = { erro: 'border-red-200 bg-red-50 text-red-800', sucesso: 'border-menta bg-menta text-texto', info: 'border-marca-200 bg-marca-50 text-marca-800' }[tipo]
+  return <div className={`rounded-sm border px-4 py-3 text-sm ${c}`}>{children}</div>
 }
 
 export function Vazio({ children }: { children: ReactNode }) {
-  return <div className="rounded-xl border border-dashed border-slate-300 p-8 text-center text-sm text-slate-500">{children}</div>
+  return <div className="rounded-sm border border-dashed border-slate-300 bg-white p-8 text-center text-sm text-slate-500">{children}</div>
 }
 
 // ── Avisos rápidos (toasts) ──
@@ -144,7 +144,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
         {lista.map((t) => (
           <div
             key={t.id}
-            className={`rounded-lg px-4 py-3 text-sm text-white shadow-lg ${t.tipo === 'erro' ? 'bg-red-600' : t.tipo === 'sucesso' ? 'bg-emerald-600' : 'bg-slate-800'}`}
+            className={`rounded px-4 py-3 text-sm shadow-lg ${t.tipo === 'erro' ? 'bg-red-600 text-white' : t.tipo === 'sucesso' ? 'bg-menta text-texto ring-1 ring-emerald-200' : 'bg-marca-900 text-white'}`}
           >
             {t.texto}
           </div>

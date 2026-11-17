@@ -85,8 +85,8 @@ function CartaoPedido({ pedido: p, meuId, aoVerInformativo }: { pedido: any; meu
             </span>
           </div>
           <div className="mt-3 grid gap-2 text-sm sm:grid-cols-2">
-            <div className="rounded-lg bg-slate-50 p-3">
-              <div className="text-xs font-semibold uppercase text-slate-500">{p.solicitante.split(' ')[0]} cede</div>
+            <div className="rounded bg-slate-50 p-3">
+              <div className="text-xs font-medium uppercase text-slate-500">{p.solicitante.split(' ')[0]} cede</div>
               <div className="font-medium">
                 {r.ofertada.turmas.join(' + ')} · {descreverAula(r.ofertada.data, r.ofertada.horario)}
               </div>
@@ -95,8 +95,8 @@ function CartaoPedido({ pedido: p, meuId, aoVerInformativo }: { pedido: any; meu
               </div>
             </div>
             {r.pedida && (
-              <div className="rounded-lg bg-slate-50 p-3">
-                <div className="text-xs font-semibold uppercase text-slate-500">{p.solicitante.split(' ')[0]} assume</div>
+              <div className="rounded bg-slate-50 p-3">
+                <div className="text-xs font-medium uppercase text-slate-500">{p.solicitante.split(' ')[0]} assume</div>
                 <div className="font-medium">
                   {r.pedida.turmas.join(' + ')} · {descreverAula(r.pedida.data, r.pedida.horario)}
                 </div>

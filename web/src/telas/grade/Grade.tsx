@@ -98,15 +98,15 @@ export function Grade() {
         }
       />
 
-      <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
+      <div className="overflow-x-auto rounded-sm bg-white shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
         <table className="w-full min-w-[900px] table-fixed border-collapse">
           <thead>
             <tr>
-              <th className="w-28 border-b border-slate-200 p-3" />
+              <th className="w-28 border-b border-divisa p-3" />
               {dias.map((d) => (
-                <th key={d} className={`border-b border-l border-slate-200 p-3 text-left ${d === hoje() ? 'bg-indigo-50' : ''}`}>
-                  <div className="text-xs font-semibold uppercase text-slate-500">{DIAS[new Date(d + 'T12:00').getDay()]}</div>
-                  <div className="text-sm font-semibold text-slate-800">{dataCurta(d)}</div>
+                <th key={d} className={`border-b border-l border-divisa p-3 text-left ${d === hoje() ? 'bg-marca-50' : ''}`}>
+                  <div className="text-xs font-medium uppercase text-slate-500">{DIAS[new Date(d + 'T12:00').getDay()]}</div>
+                  <div className="text-sm font-medium text-texto">{dataCurta(d)}</div>
                 </th>
               ))}
             </tr>
@@ -114,14 +114,14 @@ export function Grade() {
           <tbody>
             {[1, 2].map((h) => (
               <tr key={h}>
-                <td className="border-b border-slate-200 p-3 align-top">
-                  <div className="text-sm font-semibold text-slate-700">{h}º horário</div>
+                <td className="border-b border-divisa p-3 align-top">
+                  <div className="text-sm font-medium text-slate-700">{h}º horário</div>
                   <div className="text-xs text-slate-500">
                     {HORARIOS[h].inicio}–{HORARIOS[h].fim}
                   </div>
                 </td>
                 {dias.map((d) => (
-                  <td key={d} className={`h-32 border-b border-l border-slate-200 p-2 align-top ${d === hoje() ? 'bg-indigo-50/40' : ''}`}>
+                  <td key={d} className={`h-32 border-b border-l border-divisa p-2 align-top ${d === hoje() ? 'bg-marca-50/40' : ''}`}>
                     <div className="space-y-2">
                       {(porCelula.get(`${d}|${h}`) ?? []).map((a) => (
                         <CartaoAula key={a.id} aula={a} meuId={usuario!.id} acionavel={podeAgir(a)} aoClicar={() => setSelecionada(a)} />
@@ -140,7 +140,7 @@ export function Grade() {
         {selecionada && (
           <div className="space-y-4">
             <div>
-              <div className="text-lg font-semibold">{selecionada.disciplinaAtual ?? 'Sem aula'}</div>
+              <div className="text-lg font-medium">{selecionada.disciplinaAtual ?? 'Sem aula'}</div>
               <div className="text-sm text-slate-500">
                 {selecionada.turma} · {descreverAula(selecionada.data, selecionada.horario)} {selecionada.sala && `· ${selecionada.sala}`}
               </div>
@@ -206,11 +206,11 @@ function CartaoAula({ aula: a, meuId, acionavel, aoClicar }: { aula: AulaGrade; 
             ? 'border-violet-200 bg-violet-50'
             : a.tipo === 'vaga'
               ? 'border-dashed border-slate-300 bg-slate-50'
-              : 'border-slate-200 bg-white'
+              : 'border-divisa bg-white'
   return (
-    <button onClick={aoClicar} className={`w-full rounded-lg border p-2 text-left transition hover:shadow-sm ${fundo} ${acionavel ? 'ring-indigo-300 hover:ring-2' : ''}`}>
+    <button onClick={aoClicar} className={`w-full rounded border p-2 text-left transition hover:shadow-sm ${fundo} ${acionavel ? 'ring-marca-300 hover:ring-2' : ''}`}>
       <div className="flex items-start justify-between gap-1">
-        <div className={`text-sm leading-tight font-semibold ${a.tipo === 'cancelada' ? 'line-through' : ''}`}>{a.disciplinaAtual ?? 'Sem aula'}</div>
+        <div className={`text-sm leading-tight font-medium ${a.tipo === 'cancelada' ? 'line-through' : ''}`}>{a.disciplinaAtual ?? 'Sem aula'}</div>
         {a.travada && <span title="Travada por pedido pendente">🔒</span>}
       </div>
       <div className="mt-0.5 text-xs text-slate-600">

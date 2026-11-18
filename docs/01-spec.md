@@ -58,6 +58,7 @@ Login por e-mail e senha. Na demonstração, contas `@unimater.edu` criadas pelo
 ### Módulo 3 — Saldo e histórico
 - **RF-12** Painel de saldo por **disciplina e turma**: previstas, ministradas, cedidas, assumidas, canceladas e saldo, calculados conforme a seção 7.
 - **RF-13** Histórico cronológico de todos os eventos (pedido criado, aprovado, recusado, cancelado, expirado; reposição; cancelamento de aula; geração de calendário; cadastros). O histórico nunca é editado nem apagado.
+- **RF-20** **Acerto de contas**: tela que mostra, por turma, quem deve aulas a quem e oferece a ação que zera os dois (seção 7.1).
 - **RF-14** Lista de pedidos **recebidos** e **enviados**, com filtro por status. Todos os perfis veem saldo e histórico de todos.
 
 ### Módulo 4 — Divulgação
@@ -74,6 +75,7 @@ Login por e-mail e senha. Na demonstração, contas `@unimater.edu` criadas pelo
 - **RN-01** Trocas acontecem **somente entre professores da mesma turma**. Em aula compartilhada, vale qualquer professor de **qualquer** das turmas do grupo.
 - **RN-02** Em aula compartilhada, **só as turmas atendidas pela disciplina do substituto recebem a aula**; as demais ficam **vagas** naquele horário.
 - **RN-03** **Choque de horário**: um professor não pode ter duas aulas acontecendo na mesma data e horário. As aulas de uma mesma noite compartilhada contam como uma.
+- **RN-12** **Crédito não nasce do nada**: reposição em noite totalmente vazia só é permitida a quem tem débito naquela disciplina e turma. Cobrir uma noite vaga ou cancelada de outra disciplina continua permitido (gera crédito casado com o devedor).
 - **RN-11** **Noite inteira**: toda operação envolve os dois horários da noite; não existe troca, cancelamento ou reposição de um horário só.
 - **RN-04** Enquanto um pedido estiver **pendente**, **apenas as aulas envolvidas** ficam travadas: nenhum outro pedido, reposição ou cancelamento pode usá-las.
 - **RN-05** Só podem ser trocadas, canceladas ou usadas em reposição aulas que **ainda não começaram**. **Não há antecedência mínima**: vale trocar no mesmo dia.
@@ -92,11 +94,24 @@ Considerando apenas as aulas da turma **t**:
 | **Previstas** | aulas com responsável = d |
 | **Ministradas** | aulas com atual = d, status normal, **já encerradas**; mais as aulas com responsável = d em **feriado** já passado |
 | **Cedidas** | aulas com responsável = d e atual ≠ d (outra disciplina ou vaga) |
-| **Assumidas** | aulas com atual = d e responsável ≠ d (outra disciplina ou nenhuma) |
-| **Canceladas** | aulas com atual = d e status cancelada |
+| **Assumidas** | aulas com atual = d, responsável ≠ d (outra disciplina ou nenhuma) e que **acontecem** (não canceladas) |
+| **Canceladas** | aulas **próprias** canceladas: responsável = d, atual = d e status cancelada |
 | **Saldo** | assumidas − cedidas − canceladas |
 
 Situação: saldo < 0 → **a repor**; saldo = 0 → **em dia**; saldo > 0 → **crédito**.
+
+Em outras palavras: **saldo = aulas da disciplina que acontecem − aulas que eram dela**. Uma aula assumida e depois cancelada não aconteceu: não conta para quem assumiu, e quem cedeu continua devendo.
+
+**Meta do semestre: todos fecham em 0.** O crédito só serve para acertar com um colega que deve (seção 7.1).
+
+### 7.1 Acerto de contas
+
+Por turma, o sistema casa quem deve com quem tem crédito, priorizando quem trocou com quem:
+
+| Situação | Como zerar |
+|---|---|
+| A deve aulas a B | B cede uma noite sua a A (troca pontual): B −2, A +2 |
+| A deve aulas à turma (não há credor) | A repõe numa noite vaga da turma |
 
 O saldo é **sempre calculado a partir das aulas**; não existe valor guardado a ser "recalculado".
 
@@ -124,6 +139,9 @@ O saldo é **sempre calculado a partir das aulas**; não existe valor guardado a
 | **CA-11** | Professor faz reposição em noite vaga | Os dois horários são ocupados; disciplina conta 2 assumidas; sem aprovação. |
 | **CA-12** | Reposição em horário ocupado, em feriado ou com o professor em choque | Recusada. |
 | **CA-21** | Professor X cancela uma noite e o professor Y faz reposição nessa noite | X continua com 2 canceladas; Y fica com 2 assumidas; a TV mostra a reposição de Y no lugar da aula cancelada. |
+| **CA-23** | B assume uma noite de A (pontual) e depois cancela | B fica com 0 assumidas, 0 canceladas e saldo 0; A continua com 2 cedidas (saldo −2) e deve repor. |
+| **CA-24** | A cedeu uma noite a B (pontual) | O acerto de contas mostra "A deve 2 aulas a B" na turma; depois que B cede uma noite a A, os dois ficam em 0 e o acerto some. |
+| **CA-25** | Professor sem débito tenta repor numa noite totalmente vazia | Recusado; noites vagas ou canceladas de colegas continuam disponíveis. |
 | **CA-22** | Tentativa de cadastrar disciplina com um horário só na noite, ou de trocar um horário só | Não é possível: cadastro e operações são sempre por noite. |
 | **CA-13** | Professor cancela uma noite com motivo | As 2 aulas ficam canceladas; motivo registrado; disciplina conta 2 canceladas (saldo −2). Sem motivo, recusado. |
 | **CA-14** | Duas operações simultâneas sobre a mesma aula (dois pedidos, ou duas aprovações do mesmo pedido) | Exatamente uma é efetivada; nenhuma inconsistência em **50 repetições**. |
@@ -169,6 +187,8 @@ Massa de dados: semestre 2026/2 (03/08 a 12/12/2026), 6 turmas (SI 2º, 4º, 6º
 | Aula em feriado conta como ministrada; cancelada vira débito | Regra da coordenação. |
 | Sem antecedência mínima | Prática real: trocas no mesmo dia. |
 | Operações sempre pela noite inteira (2 aulas) | Prática real: nunca há uma noite dividida entre dois professores. |
+| Todos fecham o semestre em 0; crédito só acerta com colega | Regra da coordenação; evita créditos sem devedor (RN-12). |
+| Assumida cancelada não conta | A aula não aconteceu; a dívida continua de quem cedeu, que é quem pode repor a própria disciplina. |
 | Compensatória não gera cedida/assumida | É uma permuta equilibrada; cedida e assumida medem só o que gera débito ou crédito. A aula guarda a disciplina **responsável**, que a compensatória transfere e a pontual não. |
 | Sem aprovação da coordenação | Trocas ficam entre os professores. |
 | Horário de aula cancelada pode receber reposição | Prática real: o horário fica livre para outro professor da turma. |

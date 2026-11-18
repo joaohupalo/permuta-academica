@@ -170,6 +170,7 @@ Todas sob `/api`. Autenticadas por `Authorization: Bearer <token>`, exceto as ma
 | `POST /reposicoes` | Reposição em horário vago |
 | `POST /aulas/:id/cancelar` | Cancelar aula com motivo |
 | `GET /saldo` · `GET /historico` | Saldo e histórico |
+| `GET /acertos` | Acerto de contas: quem deve a quem, por turma (RF-20) |
 | `GET·POST·PUT·DELETE /turmas, /professores, /disciplinas, /feriados` | Cadastros (coordenação) |
 | `GET·PUT /semestre` · `POST /semestre/gerar` | Semestre e calendário |
 | `POST /importar/:tipo` | Importação CSV (professores, turmas, feriados) |

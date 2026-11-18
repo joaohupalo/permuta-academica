@@ -9,11 +9,13 @@ describe('Informativo', () => {
     expect(r.informativo).toHaveLength(1)
     const texto: string = r.informativo[0]
     expect(texto).toContain('Alteração de aula — SI 4º')
-    expect(texto).toContain('quarta-feira, 25/11/2026 — 1º horário (19:10–20:25)')
-    expect(texto).toContain('quarta-feira, 25/11/2026 — 2º horário (20:45–22:00)')
+    // Um bloco por noite (RN-11), não um por horário
+    expect(texto).toContain('quarta-feira, 25/11/2026 — noite inteira (19:10–22:00)')
+    expect(texto).toContain('quinta-feira, 26/11/2026 — noite inteira (19:10–22:00)')
+    expect(texto).not.toContain('º horário')
+    expect(texto.match(/Data:/g)).toHaveLength(2)
     expect(texto).toContain('Aula prevista: Engenharia de Software — Bruno Lima')
     expect(texto).toContain('Aula que será ministrada: Banco de Dados II — Ana Souza')
-    expect(texto).toContain('quinta-feira, 26/11/2026')
     const lista = (await amb.como('Ana Souza').get('/pedidos?caixa=enviados')).json() as any[]
     expect(lista.find((x) => x.id === p.id).informativo).toEqual(r.informativo)
   })

@@ -4,6 +4,7 @@ import { aula, disciplina, disciplinaTurma, feriado, pedido, semestre, turma, us
 import { datasEntre, diaDaSemana, formatarData, inicioDaAula, NOMES_DIAS, paraISO } from '../../compartilhado/horarios.js'
 import { conflito, invalido, naoEncontrado, proibido } from '../../compartilhado/erros.js'
 import { registrar } from '../historico/registrar.js'
+import { saldoDe } from '../saldo/calcular.js'
 import { carregarNomes, gerarInformativo } from '../informativo/gerar.js'
 import {
   type Aula,
@@ -184,6 +185,8 @@ export function noitesVagas(ctx: Contexto, usuarioId: number, disciplinaId: numb
       .map((l) => l.data),
   )
   const n = carregarNomes(db)
+  // RN-12: noites totalmente vazias só aparecem para quem tem débito na turma.
+  const comDebito = new Set(turmas.filter((t) => saldoDe(ctx, disciplinaId, t) <= -2))
   const resultado = []
   for (const data of datasEntre(inicio, sem.fim)) {
     const dia = diaDaSemana(data)
@@ -192,6 +195,7 @@ export function noitesVagas(ctx: Contexto, usuarioId: number, disciplinaId: numb
     for (const t of turmas) {
       const linhas = porNoite.get(`${t}|${data}`) ?? []
       if (!noiteLivre(linhas)) continue
+      if (!linhas.length && !comDebito.has(t)) continue
       const cancelada = linhas.find((l) => l.status === 'cancelada')
       const vaga = linhas.find((l) => l.status === 'vaga')
       resultado.push({
@@ -412,6 +416,9 @@ export function reporAula(ctx: Contexto, u: Usuario, e: EntradaReposicao) {
 
     const linhas = tx.select().from(aula).where(and(eq(aula.turmaId, e.turmaId), eq(aula.data, e.data))).all()
     if (!noiteLivre(linhas)) throw conflito('Essa noite não está vaga nessa turma.')
+    // RN-12: em noite totalmente vazia, só repõe quem tem débito (senão nasceria um crédito sem devedor).
+    if (!linhas.length && saldoDe(ctx, d.id, e.turmaId) > -2)
+      throw conflito('Você não tem aulas a repor nesta turma. Noites totalmente vazias são só para quem tem débito.')
 
     // A noite de reposição forma um grupo próprio. Aula cancelada continua registrada (débito de quem cancelou).
     const grupo = `r|${e.turmaId}|${e.data}`

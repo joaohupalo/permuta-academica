@@ -68,8 +68,9 @@ export function calcularSaldo(ctx: Contexto): LinhaSaldo[] {
     if (a.status === 'feriado' && encerrada && responsavel) responsavel.ministradas++
     if (a.status === 'normal' && encerrada && atual) atual.ministradas++
     if (responsavel && a.disciplinaAtualId !== a.disciplinaResponsavelId) responsavel.cedidas++
-    if (atual && a.disciplinaResponsavelId !== a.disciplinaAtualId) atual.assumidas++
-    if (a.status === 'cancelada' && atual) atual.canceladas++
+    // Assumida só conta se a aula acontece; cancelada só conta se a aula era da própria disciplina (spec §7).
+    if (atual && a.disciplinaResponsavelId !== a.disciplinaAtualId && a.status !== 'cancelada') atual.assumidas++
+    if (a.status === 'cancelada' && atual && a.disciplinaResponsavelId === a.disciplinaAtualId) atual.canceladas++
   }
 
   return [...saldo.values()]
@@ -78,4 +79,9 @@ export function calcularSaldo(ctx: Contexto): LinhaSaldo[] {
       return { ...l, saldo: s, situacao: s < 0 ? ('a repor' as const) : s > 0 ? ('crédito' as const) : ('em dia' as const) }
     })
     .sort((x, y) => x.turma.localeCompare(y.turma) || x.disciplina.localeCompare(y.disciplina))
+}
+
+/** Saldo de uma disciplina numa turma (0 se não houver linha). */
+export function saldoDe(ctx: Contexto, disciplinaId: number, turmaId: number) {
+  return calcularSaldo(ctx).find((l) => l.disciplinaId === disciplinaId && l.turmaId === turmaId)?.saldo ?? 0
 }

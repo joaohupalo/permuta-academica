@@ -46,6 +46,7 @@ describe('Concorrência', () => {
 
   it('CA-14: duas reposições simultâneas na mesma noite vaga — só uma é criada', async () => {
     const amb = await criarAmbiente()
+    await amb.como('Ana Souza').post(`/aulas/${amb.aulaEm('SI 4º', '2026-11-26', 1).id}/cancelar`, { motivo: 'Consulta' }) // Ana passa a dever 2
     const corpo = { disciplinaId: amb.idDisciplina('Banco de Dados II'), turmaId: amb.idTurma('SI 4º'), data: '2026-11-27' }
     const [a, b] = await Promise.all([amb.como('Ana Souza').post('/reposicoes', corpo), amb.como('Ana Souza').post('/reposicoes', corpo)])
     expect([a.statusCode, b.statusCode].sort()).toEqual([201, 409])

@@ -89,8 +89,8 @@ Referência rápida (turma SI 4º): seg = Ética (Hélio, junto com ADS 4º) · 
 
 | # | Passo | Esperado | ✓ |
 |---|---|---|---|
-| 1 | **Ana** → Minha grade → semana de 30/11 → **terça 01/12** (Banco de Dados, ADS 4º) → Cancelar a noite → motivo | Banco de Dados (ADS 4º): 2 canceladas, saldo −2 | ☐ |
-| 2 | Tente cancelar **sem motivo** | Mensagem pedindo o motivo | ☐ |
+| 1 | **Ana** → Minha grade → clique **→ duas vezes** (semana de 30/11) → card **terça 01/12** (Banco de Dados, ADS 4º) → Cancelar a noite → **sem motivo** → Confirmar | Mensagem pedindo o motivo | ☐ |
+| 2 | Escreva um motivo → Confirmar | Banco de Dados (ADS 4º): 2 canceladas, saldo −2; card riscado com "Cancelada" | ☐ |
 | 3 | **Gustavo** → Reposição → Gestão de Projetos | Lista mostra **ADS 4º · ter 01/12 · aula de Banco de Dados cancelada** | ☐ |
 | 4 | Registrar | Informativo com "Banco de Dados — Ana Souza (cancelada)" | ☐ |
 | 5 | TV com `?data=2026-12-01` | ADS 4º terça: **REPOSIÇÃO** de Gestão de Projetos "no lugar de Banco de Dados (cancelada)" | ☐ |

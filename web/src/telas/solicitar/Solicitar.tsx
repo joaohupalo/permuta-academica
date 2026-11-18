@@ -68,7 +68,7 @@ function FormTroca({ tipo, aulaInicial, acerto }: { tipo: 'compensatoria' | 'pon
   }, [aulas, usuario, acerto])
   const aula = minhas.find((a) => a.id === aulaId) ?? null
 
-  const { data: candidatos = [], isFetching: buscandoColegas } = useQuery({
+  const { data: candidatos = [], isFetching: buscandoColegas, error: erroColegas } = useQuery({
     queryKey: ['candidatos', aulaId],
     queryFn: () => api<any[]>(`/aulas/${aulaId}/candidatos`),
     enabled: !!aula,
@@ -142,7 +142,8 @@ function FormTroca({ tipo, aulaInicial, acerto }: { tipo: 'compensatoria' | 'pon
               2. Colegas livres em {descreverNoite(aula.data)}
             </div>
             {buscandoColegas && <p className="text-sm text-slate-500">Buscando…</p>}
-            {!buscandoColegas && !disponiveis.length && <Vazio>Nenhum colega das turmas desta noite está livre nos dois horários.</Vazio>}
+            {erroColegas && <Aviso>{(erroColegas as Error).message}</Aviso>}
+            {!buscandoColegas && !erroColegas && !disponiveis.length && <Vazio>Nenhum colega das turmas desta noite está livre nos dois horários.</Vazio>}
             <div className="space-y-2">
               {disponiveis.map((c) => (
                 <label
@@ -256,7 +257,7 @@ function FormReposicao({ disciplinaInicial, turmaInicial }: { disciplinaInicial:
   const { data: turmas = [] } = useQuery({ queryKey: ['turmas'], queryFn: () => api<any[]>('/turmas') })
   const minhas = disciplinas.filter((d) => d.professorId === usuario!.id)
   const disc = minhas.find((d) => d.id === disciplinaId)
-  const { data: vagos = [], isFetching } = useQuery({
+  const { data: vagos = [], isFetching, error: erroVagos } = useQuery({
     queryKey: ['vagos', disciplinaId, turmaId],
     queryFn: () => api<any[]>(`/noites-vagas?disciplinaId=${disciplinaId}${turmaId ? `&turmaId=${turmaId}` : ''}`),
     enabled: !!disciplinaId,
@@ -315,7 +316,7 @@ function FormReposicao({ disciplinaInicial, turmaInicial }: { disciplinaInicial:
         <Cartao>
           <Campo rotulo="Noite vaga">
             <select className={classeEntrada} value={vagoChave} onChange={(e) => setVagoChave(e.target.value)}>
-              <option value="">{isFetching ? 'Buscando…' : vagos.length ? 'Escolha…' : 'Nenhuma noite vaga encontrada'}</option>
+              <option value="">{isFetching ? 'Buscando…' : erroVagos ? 'Erro ao buscar noites vagas' : vagos.length ? 'Escolha…' : 'Nenhuma noite vaga encontrada'}</option>
               {vagos.map((v) => (
                 <option key={`${v.turmaId}|${v.data}`} value={`${v.turmaId}|${v.data}`}>
                   {v.turma} · {descreverNoite(v.data)}
@@ -324,6 +325,7 @@ function FormReposicao({ disciplinaInicial, turmaInicial }: { disciplinaInicial:
               ))}
             </select>
           </Campo>
+          {erroVagos && <div className="mt-3"><Aviso>{(erroVagos as Error).message}</Aviso></div>}
           <div className="mt-4 grid gap-4 sm:grid-cols-[1fr_auto] sm:items-end">
             <Campo rotulo="Sala (opcional)">
               <input className={classeEntrada} value={sala} onChange={(e) => setSala(e.target.value)} placeholder="Ex.: Lab 3" />

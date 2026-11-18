@@ -91,7 +91,7 @@ erDiagram
     HORARIO_FIXO { int disciplina_id int dia_semana int horario string sala }
     FERIADO { string data string descricao }
     SEMESTRE { string nome string inicio string fim }
-    AULA { int id int turma_id string data int horario string grupo int disciplina_prevista_id int disciplina_atual_id int professor_atual_id string status string motivo int pedido_pendente_id }
+    AULA { int id int turma_id string data int horario string grupo int disciplina_prevista_id int disciplina_responsavel_id int disciplina_atual_id int professor_atual_id string status string motivo int pedido_pendente_id }
     PEDIDO { int id string tipo int solicitante_id int destinatario_id int aula_ofertada_id int aula_pedida_id int disciplina_destino_id string status }
     EVENTO { int id string quando string tipo string descricao json dados }
 ```
@@ -101,8 +101,9 @@ erDiagram
 | Campo | Papel |
 |---|---|
 | `turma_id`, `data`, `horario` | Identificam a aula. **Índice único parcial**: só existe uma aula *ativa* (não cancelada) por turma, data e horário. Uma aula cancelada pode dividir o horário com a reposição que ocupou o lugar dela. |
-| `grupo` | Liga as aulas de uma disciplina compartilhada no mesmo horário. |
-| `disciplina_prevista_id` | O que o calendário original mandava (nulo em reposição em horário vazio). |
+| `grupo` | Liga as aulas de uma **noite**: os dois horários da disciplina naquela data, em todas as turmas dela. Toda operação age sobre o grupo inteiro (RN-11). |
+| `disciplina_prevista_id` | O que o calendário original mandava (nulo em reposição em horário vazio). Usado para exibir "no lugar de". |
+| `disciplina_responsavel_id` | A quem a aula pertence **para o saldo**. Nasce igual à prevista; a compensatória transfere a responsabilidade (permuta equilibrada); a pontual não (gera cedida/assumida). |
 | `disciplina_atual_id`, `professor_atual_id` | O que vai acontecer de fato (nulos se a aula ficou vaga). |
 | `status` | `normal` · `feriado` · `cancelada` · `vaga` |
 | `pedido_pendente_id` | Preenchido = aula travada (RN-04). |
@@ -113,10 +114,10 @@ erDiagram
 
 | Operação | Efeito nas aulas | Aceite |
 |---|---|---|
-| **Compensatória** | Grupo A recebe a disciplina/professor de B; grupo B recebe a de A. | Sim |
-| **Pontual** | Grupo A recebe a disciplina escolhida do professor B. | Sim |
-| **Reposição** | Cria aula em horário vazio ou de aula cancelada, ou preenche aula `vaga`. | Não |
-| **Cancelamento** | Aula vira `cancelada` com motivo. | Não |
+| **Compensatória** | Noite A recebe a disciplina/professor de B; noite B recebe a de A; a responsabilidade vai junto (saldo neutro). | Sim |
+| **Pontual** | Noite A recebe a disciplina escolhida do professor B; a responsabilidade fica com A (A −2, B +2). | Sim |
+| **Reposição** | Ocupa os dois horários de uma noite vaga da turma (vazia, cancelada ou `vaga`). | Não |
+| **Cancelamento** | As aulas da noite viram `cancelada` com motivo. | Não |
 
 **Aula compartilhada (RN-02):** ao aplicar a disciplina X num grupo, cada aula do grupo recebe X **se a turma dela for atendida por X**; senão, fica `vaga`.
 
@@ -163,7 +164,7 @@ Todas sob `/api`. Autenticadas por `Authorization: Bearer <token>`, exceto as ma
 | `GET /aulas?inicio=&fim=&professorId=&turmaId=` | Grade |
 | `GET /aulas/:id/candidatos` | Colegas disponíveis e suas disciplinas (RF-07) |
 | `GET /aulas/:id/contrapartidas?professorId=` | Aulas do colega que podem entrar na compensatória |
-| `GET /horarios-vagos?disciplinaId=&turmaId=` | Horários vagos para reposição |
+| `GET /noites-vagas?disciplinaId=&turmaId=` | Noites vagas para reposição |
 | `POST /pedidos` · `GET /pedidos?caixa=&status=` | Criar e listar pedidos |
 | `POST /pedidos/:id/aprovar · /recusar · /cancelar` | Responder pedido |
 | `POST /reposicoes` | Reposição em horário vago |

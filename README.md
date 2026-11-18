@@ -10,7 +10,7 @@ Desenvolvido com **Spec-Driven Development**: cada etapa gerou um artefato revis
 | 2. Planejar | [`docs/02-plano.md`](docs/02-plano.md) — arquitetura, modelo de dados, API |
 | 3. Decompor | [`docs/03-tarefas.md`](docs/03-tarefas.md) — tarefas T01–T22 ligadas aos critérios |
 | 4. Implementar | `api/` e `web/` — um commit por tarefa (`etapa 4: Txx …`) |
-| 5. Validar | `api/testes/` — um teste por critério, nomeado `CA-xx` |
+| 5. Validar | `api/testes/` — um teste por critério, nomeado `CA-xx` · [`docs/04-testes-manuais.md`](docs/04-testes-manuais.md) — roteiro de testes na tela |
 
 Veja a sequência com `git log --oneline --reverse`.
 

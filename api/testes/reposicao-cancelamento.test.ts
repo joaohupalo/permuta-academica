@@ -112,17 +112,18 @@ describe('Acerto de contas', () => {
     expect(acertos).toEqual([])
   })
 
-  it('CA-25: sem débito, não há reposição em noite totalmente vazia; noite cancelada de colega continua disponível', async () => {
+  it('CA-25: aula adiantada — reposição sem débito gera crédito, e cancelar uma noite futura zera', async () => {
     const amb = await criarAmbiente()
-    const corpo = { disciplinaId: amb.idDisciplina('Banco de Dados II'), turmaId: amb.idTurma('SI 4º'), data: '2026-11-27' }
-    const r = await amb.como('Ana Souza').post('/reposicoes', corpo)
-    expect(r.statusCode).toBe(409)
-    expect(r.json().erro).toMatch(/não tem aulas a repor/)
-    const vagas = (await amb.como('Ana Souza').get(`/noites-vagas?disciplinaId=${amb.idDisciplina('Banco de Dados II')}`)).json() as any[]
-    expect(vagas.some((v) => v.data === '2026-11-27')).toBe(false)
-    // Uma noite cancelada pelo Bruno aparece para a Ana mesmo sem débito
-    await amb.como('Bruno Lima').post(`/aulas/${amb.aulaEm('SI 4º', '2026-11-25', 1).id}/cancelar`, { motivo: 'Congresso' })
-    const vagas2 = (await amb.como('Ana Souza').get(`/noites-vagas?disciplinaId=${amb.idDisciplina('Banco de Dados II')}`)).json() as any[]
-    expect(vagas2.some((v) => v.data === '2026-11-25')).toBe(true)
+    const r = await amb.como('Ana Souza').post('/reposicoes', { disciplinaId: amb.idDisciplina('Banco de Dados II'), turmaId: amb.idTurma('SI 4º'), data: '2026-11-27' })
+    expect(r.statusCode).toBe(201)
+    expect((await amb.saldoDe('Banco de Dados II', 'SI 4º')).saldo).toBe(2)
+    let acertos = ((await amb.como('Ana Souza').get('/acertos')).json() as any[]).filter((a) => a.turma === 'SI 4º')
+    expect(acertos).toEqual([expect.objectContaining({ acao: 'cancelar', aulas: 2, devedor: null, credor: expect.objectContaining({ professor: 'Ana Souza' }) })])
+
+    await amb.como('Ana Souza').post(`/aulas/${amb.aulaEm('SI 4º', '2026-12-03', 1).id}/cancelar`, { motivo: 'Aula adiantada em 27/11' })
+    const s = await amb.saldoDe('Banco de Dados II', 'SI 4º')
+    expect([s.assumidas, s.canceladas, s.saldo]).toEqual([2, 2, 0])
+    acertos = ((await amb.como('Ana Souza').get('/acertos')).json() as any[]).filter((a) => a.turma === 'SI 4º')
+    expect(acertos).toEqual([])
   })
 })

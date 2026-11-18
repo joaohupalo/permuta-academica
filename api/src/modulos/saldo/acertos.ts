@@ -15,8 +15,8 @@ export interface Acerto {
   aulas: number
   devedor: Parte | null
   credor: Parte | null
-  /** ceder: o credor cede uma noite ao devedor · repor: o devedor repõe numa noite vaga */
-  acao: 'ceder' | 'repor' | 'revisar'
+  /** ceder: o credor cede uma noite ao devedor · repor: o devedor repõe numa noite vaga · cancelar: aula adiantada, o credor cancela uma noite futura (RN-12) */
+  acao: 'ceder' | 'repor' | 'cancelar'
 }
 
 const parte = (l: LinhaSaldo): Parte => ({ disciplinaId: l.disciplinaId, disciplina: l.disciplina, professorId: l.professorId, professor: l.professor })
@@ -55,8 +55,8 @@ export function calcularAcertos(ctx: Contexto): Acerto[] {
       c.resta -= q
     }
     for (const d of devedores) if (d.resta > 0) resultado.push({ turmaId, turma, aulas: d.resta, devedor: parte(d.l), credor: null, acao: 'repor' })
-    // Não deveria acontecer com a RN-12, mas se houver crédito sem devedor, aparece para a coordenação revisar.
-    for (const c of credores) if (c.resta > 0) resultado.push({ turmaId, turma, aulas: c.resta, devedor: null, credor: parte(c.l), acao: 'revisar' })
+    // Crédito sem devedor = aula adiantada: zera cancelando uma noite futura (RN-12).
+    for (const c of credores) if (c.resta > 0) resultado.push({ turmaId, turma, aulas: c.resta, devedor: null, credor: parte(c.l), acao: 'cancelar' })
   }
   return resultado.sort((x, y) => x.turma.localeCompare(y.turma))
 }

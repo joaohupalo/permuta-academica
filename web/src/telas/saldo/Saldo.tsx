@@ -1,9 +1,10 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '../../api/cliente'
 import { useSessao } from '../../api/sessao'
 import { dataHora } from '../../api/formato'
-import { Cartao, Etiqueta, Titulo, classeEntrada } from '../../componentes/ui'
+import { Botao, Cartao, Etiqueta, Titulo, classeEntrada } from '../../componentes/ui'
 import { ModalInformativo } from '../../componentes/Informativo'
 
 const COR_EVENTO: Record<string, string> = {
@@ -32,6 +33,12 @@ export function Saldo() {
     queryFn: () => api<any[]>(`/saldo?${professorId ? `professorId=${professorId}&` : ''}${turmaId ? `turmaId=${turmaId}` : ''}`),
   })
   const { data: historico = [] } = useQuery({ queryKey: ['historico'], queryFn: () => api<any[]>('/historico?limite=150') })
+  const { data: todosAcertos = [] } = useQuery({ queryKey: ['acertos'], queryFn: () => api<any[]>('/acertos') })
+  const acertos = todosAcertos.filter(
+    (a) =>
+      (!professorId || a.devedor?.professorId === Number(professorId) || a.credor?.professorId === Number(professorId)) &&
+      (!turmaId || a.turmaId === Number(turmaId)),
+  )
 
   const soma = (k: string) => linhas.reduce((s, l) => s + l[k], 0)
   const saldoTotal = soma('saldo')
@@ -80,6 +87,8 @@ export function Saldo() {
           </Cartao>
         ))}
       </div>
+
+      <PainelAcertos acertos={acertos} meuId={usuario!.id} />
 
       <div className="grid gap-6 xl:grid-cols-[1fr_420px]">
         <Cartao className="overflow-x-auto !p-0">
@@ -147,5 +156,72 @@ export function Saldo() {
       </div>
       <ModalInformativo textos={informativo} aoFechar={() => setInformativo(null)} />
     </div>
+  )
+}
+
+/** Acerto de contas (RF-20): quem deve aulas a quem, com o atalho que zera os dois. Meta: todos fecham em 0. */
+function PainelAcertos({ acertos, meuId }: { acertos: any[]; meuId: number }) {
+  const navegar = useNavigate()
+  return (
+    <Cartao className="mb-6">
+      <div className="mb-3 flex items-baseline justify-between">
+        <div className="text-xs font-medium uppercase text-slate-500">Acerto de contas</div>
+        <div className="text-xs text-slate-400">Meta do semestre: todos em 0. O crédito acerta com quem deve ou compensa um cancelamento futuro.</div>
+      </div>
+      {!acertos.length ? (
+        <p className="text-sm text-emerald-700">Tudo acertado: ninguém deve aulas aqui.</p>
+      ) : (
+        <ul className="divide-y divide-slate-100">
+          {acertos.map((a, i) => {
+            const souCredor = a.credor?.professorId === meuId
+            const souDevedor = a.devedor?.professorId === meuId
+            return (
+              <li key={i} className="flex flex-wrap items-center justify-between gap-3 py-3 text-sm">
+                <div>
+                  <Etiqueta cor="cinza">{a.turma}</Etiqueta>{' '}
+                  {a.acao === 'ceder' && (
+                    <>
+                      <strong className="font-medium">{a.devedor.professor}</strong> <span className="text-slate-500">({a.devedor.disciplina})</span> deve{' '}
+                      <strong className="font-medium text-red-600">{a.aulas} aulas</strong> a <strong className="font-medium">{a.credor.professor}</strong>{' '}
+                      <span className="text-slate-500">({a.credor.disciplina})</span>
+                    </>
+                  )}
+                  {a.acao === 'repor' && (
+                    <>
+                      <strong className="font-medium">{a.devedor.professor}</strong> <span className="text-slate-500">({a.devedor.disciplina})</span> deve{' '}
+                      <strong className="font-medium text-red-600">{a.aulas} aulas</strong> à turma
+                    </>
+                  )}
+                  {a.acao === 'cancelar' && (
+                    <>
+                      <strong className="font-medium">{a.credor.professor}</strong> <span className="text-slate-500">({a.credor.disciplina})</span> tem{' '}
+                      <strong className="font-medium text-emerald-600">{a.aulas} aulas adiantadas</strong>: pode cancelar uma noite futura
+                    </>
+                  )}
+                </div>
+                <div>
+                  {a.acao === 'ceder' && souCredor && (
+                    <Botao
+                      onClick={() => navegar(`/solicitar?tipo=pontual&para=${a.devedor.professorId}&disciplina=${a.devedor.disciplinaId}&turma=${a.turmaId}`)}
+                    >
+                      Ceder uma noite a {a.devedor.professor.split(' ')[0]}
+                    </Botao>
+                  )}
+                  {a.acao === 'ceder' && souDevedor && <span className="text-xs text-slate-500">Aguarde {a.credor.professor.split(' ')[0]} te ceder uma noite</span>}
+                  {a.acao === 'repor' && souDevedor && (
+                    <Botao onClick={() => navegar(`/solicitar?tipo=reposicao&disciplina=${a.devedor.disciplinaId}&turma=${a.turmaId}`)}>Repor em noite vaga</Botao>
+                  )}
+                  {a.acao === 'cancelar' && souCredor && (
+                    <Botao variante="secundario" onClick={() => navegar('/')}>
+                      Escolher noite para cancelar
+                    </Botao>
+                  )}
+                </div>
+              </li>
+            )
+          })}
+        </ul>
+      )}
+    </Cartao>
   )
 }

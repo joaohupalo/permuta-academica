@@ -26,12 +26,22 @@ export function Solicitar() {
         ativa={tipo}
         aoMudar={setTipo}
       />
-      {tipo === 'reposicao' ? <FormReposicao /> : <FormTroca key={tipo} tipo={tipo} aulaInicial={Number(params.get('aula')) || null} />}
+      {tipo === 'reposicao' ? (
+        <FormReposicao disciplinaInicial={Number(params.get('disciplina')) || null} turmaInicial={Number(params.get('turma')) || null} />
+      ) : (
+        <FormTroca
+          key={tipo}
+          tipo={tipo}
+          aulaInicial={Number(params.get('aula')) || null}
+          acerto={tipo === 'pontual' && params.get('para') ? { para: Number(params.get('para')), disciplina: Number(params.get('disciplina')), turma: Number(params.get('turma')) } : null}
+        />
+      )}
     </div>
   )
 }
 
-function FormTroca({ tipo, aulaInicial }: { tipo: 'compensatoria' | 'pontual'; aulaInicial: number | null }) {
+/** acerto: atalho do acerto de contas — ceder uma noite a quem deve (RF-20). */
+function FormTroca({ tipo, aulaInicial, acerto }: { tipo: 'compensatoria' | 'pontual'; aulaInicial: number | null; acerto: { para: number; disciplina: number; turma: number } | null }) {
   const { usuario } = useSessao()
   const navegar = useNavigate()
   const toast = useToast()
@@ -46,15 +56,16 @@ function FormTroca({ tipo, aulaInicial }: { tipo: 'compensatoria' | 'pontual'; a
   })
   // Uma opção por grupo (aula compartilhada aparece uma vez, com as turmas juntas).
   const minhas = useMemo(() => {
-    const m = new Map<string, AulaGrade & { turmas: string[] }>()
+    const m = new Map<string, AulaGrade & { turmas: string[]; turmaIds: number[] }>()
     for (const a of aulas) {
       if (a.professorAtualId !== usuario!.id || a.status !== 'normal' || a.travada || inicioDaAula(a.data, a.horario) <= new Date()) continue
       const g = m.get(a.grupo)
-      if (g) g.turmas.push(a.turma)
-      else m.set(a.grupo, { ...a, turmas: [a.turma] })
+      if (g) (g.turmas.push(a.turma), g.turmaIds.push(a.turmaId))
+      else m.set(a.grupo, { ...a, turmas: [a.turma], turmaIds: [a.turmaId] })
     }
-    return [...m.values()]
-  }, [aulas, usuario])
+    // No acerto de contas, só noites da turma em que existe a dívida.
+    return [...m.values()].filter((a) => !acerto || a.turmaIds.includes(acerto.turma))
+  }, [aulas, usuario, acerto])
   const aula = minhas.find((a) => a.id === aulaId) ?? null
 
   const { data: candidatos = [], isFetching: buscandoColegas } = useQuery({
@@ -76,10 +87,18 @@ function FormTroca({ tipo, aulaInicial }: { tipo: 'compensatoria' | 'pontual'; a
   }, [aulaId])
   useEffect(() => {
     setAulaPedidaId(null)
-    setDisciplinaDestinoId(colega?.disciplinas.length === 1 ? colega.disciplinas[0].id : null)
+    const doAcerto = acerto && colega?.disciplinas.find((d: any) => d.id === acerto.disciplina)
+    setDisciplinaDestinoId(doAcerto ? doAcerto.id : colega?.disciplinas.length === 1 ? colega.disciplinas[0].id : null)
   }, [destinatarioId]) // eslint-disable-line react-hooks/exhaustive-deps
+  // No acerto de contas, o colega já vem escolhido assim que a lista carrega.
+  useEffect(() => {
+    if (acerto && !destinatarioId && candidatos.some((c) => c.professorId === acerto.para && c.disponivel)) setDestinatarioId(acerto.para)
+  }, [candidatos]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const disciplinaDestino = colega?.disciplinas.find((d: any) => d.id === disciplinaDestinoId)
+  // Noite compartilhada: as turmas que a disciplina do colega não atende ficam sem aula (RN-02) e viram débito seu.
+  const discQueEntra = tipo === 'compensatoria' ? colega?.disciplinas.find((d: any) => d.nome === pedida?.disciplina) : disciplinaDestino
+  const ficamSemAula = aula && discQueEntra ? [...new Set(aula.turmas)].filter((t) => !discQueEntra.turmas.includes(t)) : []
   const pronto = !!aula && !!colega && (tipo === 'compensatoria' ? !!pedida : !!disciplinaDestino)
 
   const enviar = useMutation({
@@ -102,6 +121,7 @@ function FormTroca({ tipo, aulaInicial }: { tipo: 'compensatoria' | 'pontual'; a
   return (
     <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
       <div className="space-y-5">
+        {acerto && <Aviso tipo="info">Acerto de contas: escolha uma noite sua para ceder ao colega. Ao ser aprovada, os dois ficam mais perto do 0.</Aviso>}
         <Cartao>
           <Campo rotulo={tipo === 'compensatoria' ? '1. Noite que você vai ceder' : '1. Noite que você vai ceder ao colega'}>
             <select className={classeEntrada} value={aulaId ?? ''} onChange={(e) => setAulaId(Number(e.target.value) || null)}>
@@ -197,6 +217,11 @@ function FormTroca({ tipo, aulaInicial }: { tipo: 'compensatoria' | 'pontual'; a
                 </span>
               </div>
             </div>
+            {ficamSemAula.length > 0 && (
+              <Aviso tipo="erro">
+                Atenção: esta noite é compartilhada. {ficamSemAula.join(', ')} ficará sem aula, o que conta 2 aulas cedidas para você nessa turma.
+              </Aviso>
+            )}
             {enviar.error && <Aviso>{(enviar.error as Error).message}</Aviso>}
             <Botao className="w-full" disabled={!pronto || enviar.isPending} onClick={() => enviar.mutate()}>
               Enviar solicitação
@@ -218,11 +243,11 @@ function Linha({ titulo, antes, depois }: { titulo: string; antes: string; depoi
   )
 }
 
-function FormReposicao() {
+function FormReposicao({ disciplinaInicial, turmaInicial }: { disciplinaInicial: number | null; turmaInicial: number | null }) {
   const { usuario } = useSessao()
   const toast = useToast()
-  const [disciplinaId, setDisciplinaId] = useState<number | null>(null)
-  const [turmaId, setTurmaId] = useState<number | null>(null)
+  const [disciplinaId, setDisciplinaId] = useState<number | null>(disciplinaInicial)
+  const [turmaId, setTurmaId] = useState<number | null>(turmaInicial)
   const [vagoChave, setVagoChave] = useState('')
   const [sala, setSala] = useState('')
   const [informativo, setInformativo] = useState<string[] | null>(null)
@@ -253,7 +278,7 @@ function FormReposicao() {
     <div className="grid max-w-3xl gap-5">
       <Cartao>
         <p className="mb-4 text-sm text-slate-500">
-          Ocupe uma noite sem aula da turma (livre na grade, que ficou vaga por troca ou cuja aula foi cancelada). A reposição é sempre da noite inteira, não precisa de aprovação e conta 2 aulas assumidas no seu saldo.
+          Ocupe uma noite sem aula da turma: livre na grade, vaga por troca ou cancelada. Serve para repor aulas que você deve ou para adiantar aulas (o crédito pode compensar o cancelamento de uma noite futura). A reposição é sempre da noite inteira, não precisa de aprovação e conta 2 aulas no seu saldo.
         </p>
         <div className="grid gap-4 sm:grid-cols-2">
           <Campo rotulo="Disciplina">

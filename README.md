@@ -41,7 +41,7 @@ Requer **Node.js 20 LTS ou mais novo** (recomendado 22 LTS).
 npm install        # instala API e front
 npm run db:reset   # cria o banco com a massa da demonstração
 npm run dev        # API em http://localhost:3333 · sistema em http://localhost:5173
-npm test           # 38 testes dos critérios de aceitação
+npm test           # 41 testes dos critérios de aceitação
 ```
 
 - Sistema: <http://localhost:5173>
@@ -68,8 +68,9 @@ A massa traz o semestre 2026/2 (03/08 a 12/12), 6 turmas, 26 disciplinas, 1.064 
 5. *Saldo e histórico*: Banco de Dados II e Engenharia de Software continuam com **0 cedidas e 0 assumidas** (permuta equilibrada).
 6. **Ana** → Pontual → cede a noite de **quinta 03/12** ao Bruno → Bruno aprova: Ana −2, Bruno +2.
 7. **Ana** → *Reposição em noite vaga* → SI 4º, uma **sexta** → saldo volta a zero.
-8. **Hélio** cede a noite compartilhada de **segunda 30/11** ao **Bruno** (só leciona no SI 4º): na TV, SI 4º recebe Engenharia de Software e ADS 4º aparece **SEM AULA**.
-9. `npm test` — inclusive o teste de concorrência repetido 50 vezes.
+8. *Saldo e histórico* → **Acerto de contas**: mostra quem deve aulas a quem por turma (ex.: Carla deve 2 ao Hélio no SI 4º). Logado como o credor, **Ceder uma noite** abre a troca já preenchida; quem deve à turma vê **Repor em noite vaga**; quem adiantou aula vê a opção de cancelar uma noite futura. Meta: todos fecham em 0.
+9. **Hélio** cede a noite compartilhada de **segunda 30/11** ao **Bruno** (só leciona no SI 4º): na TV, SI 4º recebe Engenharia de Software e ADS 4º aparece **SEM AULA**.
+10. `npm test` — inclusive o teste de concorrência repetido 50 vezes.
 
 ## Estrutura
 

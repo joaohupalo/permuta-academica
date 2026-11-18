@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { api, post } from '../../api/cliente'
 import { useSessao } from '../../api/sessao'
-import { dataHora, descreverAula } from '../../api/formato'
+import { dataHora, descreverNoite } from '../../api/formato'
 import { Abas, Aviso, Botao, Cartao, Etiqueta, STATUS_PEDIDO, Titulo, Vazio, useToast } from '../../componentes/ui'
 import { ModalInformativo } from '../../componentes/Informativo'
 
@@ -88,7 +88,7 @@ function CartaoPedido({ pedido: p, meuId, aoVerInformativo }: { pedido: any; meu
             <div className="rounded bg-slate-50 p-3">
               <div className="text-xs font-medium uppercase text-slate-500">{p.solicitante.split(' ')[0]} cede</div>
               <div className="font-medium">
-                {r.ofertada.turmas.join(' + ')} · {descreverAula(r.ofertada.data, r.ofertada.horario)}
+                {r.ofertada.turmas.join(' + ')} · {descreverNoite(r.ofertada.data)}
               </div>
               <div className="text-xs text-slate-500">
                 era {r.ofertada.disciplina} → passa a {r.disciplinaDestino} ({p.destinatario})
@@ -98,7 +98,7 @@ function CartaoPedido({ pedido: p, meuId, aoVerInformativo }: { pedido: any; meu
               <div className="rounded bg-slate-50 p-3">
                 <div className="text-xs font-medium uppercase text-slate-500">{p.solicitante.split(' ')[0]} assume</div>
                 <div className="font-medium">
-                  {r.pedida.turmas.join(' + ')} · {descreverAula(r.pedida.data, r.pedida.horario)}
+                  {r.pedida.turmas.join(' + ')} · {descreverNoite(r.pedida.data)}
                 </div>
                 <div className="text-xs text-slate-500">
                   era {r.pedida.disciplina} → passa a {r.ofertada.disciplina} ({p.solicitante})

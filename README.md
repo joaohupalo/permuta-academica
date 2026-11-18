@@ -41,34 +41,34 @@ Requer **Node.js 20 LTS ou mais novo** (recomendado 22 LTS).
 npm install        # instala API e front
 npm run db:reset   # cria o banco com a massa da demonstração
 npm run dev        # API em http://localhost:3333 · sistema em http://localhost:5173
-npm test           # 34 testes dos critérios de aceitação
+npm test           # 38 testes dos critérios de aceitação
 ```
 
 - Sistema: <http://localhost:5173>
-- Painel da TV: <http://localhost:5173/tv> (use `?data=2026-11-18` para simular outro dia)
+- Painel da TV: <http://localhost:5173/tv> (use `?data=2026-11-25` para mostrar a semana do roteiro)
 
 ### Contas da demonstração (senha `123456`)
 
 | Conta | Perfil |
 |---|---|
 | `coordenacao@unimater.edu` | Coordenação (cadastros) |
-| `ana.souza@unimater.edu` | Banco de Dados II (SI 4º) e Banco de Dados (ADS 4º) |
-| `bruno.lima@unimater.edu` | Engenharia de Software (SI 4º) e Testes de Software (ADS 4º) |
-| `helio.martins@unimater.edu` | Ética e Legislação em TI — **compartilhada** SI 4º + ADS 4º |
+| `ana.souza@unimater.edu` | Banco de Dados II (SI 4º, quinta) e Banco de Dados (ADS 4º, terça) |
+| `bruno.lima@unimater.edu` | Engenharia de Software (SI 4º, quarta) |
+| `helio.martins@unimater.edu` | Ética e Legislação em TI — **compartilhada** SI 4º + ADS 4º (segunda) |
 | … | 14 professores; a tela de login lista todos |
 
-A massa traz o semestre 2026/2 (03/08 a 12/12), 6 turmas, 29 disciplinas, 1.045 aulas, feriados (inclui 20/11) e um histórico de trocas, cancelamento, reposição e um pedido pendente.
+A massa traz o semestre 2026/2 (03/08 a 12/12), 6 turmas, 26 disciplinas, 1.064 aulas, feriados (inclui 20/11) e um histórico de trocas, cancelamento, reposição e um pedido pendente. Cada disciplina ocupa noites inteiras (os dois horários), e toda troca, cancelamento ou reposição é da noite inteira (2 aulas).
 
 ## Roteiro de demonstração
 
-1. Abra **/tv** numa janela e o sistema em outra (duas janelas anônimas permitem logar Ana e Bruno ao mesmo tempo).
-2. **Ana** → *Solicitar troca* → Compensatória → aula de **quinta 19/11, 1º horário** → **Bruno Lima** → aula de **quarta 18/11, 1º horário** → Enviar. As aulas ficam travadas (🔒 na grade).
-3. **Bruno** recebe o aviso sem recarregar → *Pedidos* → **Aprovar troca**. A TV atualiza sozinha com o destaque **TROCA**.
+1. Abra **/tv?data=2026-11-25** numa janela e o sistema em outra (duas janelas anônimas permitem logar Ana e Bruno ao mesmo tempo).
+2. **Ana** → *Solicitar troca* → Compensatória → noite de **quinta 26/11** → **Bruno Lima** → noite de **quarta 25/11** → Enviar. As noites ficam travadas (🔒 na grade).
+3. **Bruno** recebe o aviso sem recarregar → *Pedidos* → **Aprovar troca**. A TV atualiza sozinha com o destaque **TROCA** nos dois horários.
 4. No informativo, **Compartilhar no WhatsApp**.
-5. *Saldo e histórico*: Banco de Dados II e Engenharia de Software continuam em dia (1 cedida, 1 assumida).
-6. **Ana** → Pontual → cede outra aula ao Bruno → Bruno aprova: Ana −1, Bruno +1.
-7. **Ana** → *Reposição em horário vago* → SI 4º, sexta 2º horário → saldo volta a zero.
-8. **Hélio** cede a aula compartilhada de sexta a **Fernanda** (só leciona no SI 4º): na TV, SI 4º recebe Redes e ADS 4º aparece **SEM AULA**.
+5. *Saldo e histórico*: Banco de Dados II e Engenharia de Software continuam com **0 cedidas e 0 assumidas** (permuta equilibrada).
+6. **Ana** → Pontual → cede a noite de **quinta 03/12** ao Bruno → Bruno aprova: Ana −2, Bruno +2.
+7. **Ana** → *Reposição em noite vaga* → SI 4º, uma **sexta** → saldo volta a zero.
+8. **Hélio** cede a noite compartilhada de **segunda 30/11** ao **Bruno** (só leciona no SI 4º): na TV, SI 4º recebe Engenharia de Software e ADS 4º aparece **SEM AULA**.
 9. `npm test` — inclusive o teste de concorrência repetido 50 vezes.
 
 ## Estrutura

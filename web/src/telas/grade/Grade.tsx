@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { api, post } from '../../api/cliente'
 import { useSessao } from '../../api/sessao'
-import { DIAS, HORARIOS, dataCurta, descreverAula, hoje, inicioDaAula, segundaDe, somarDias } from '../../api/formato'
+import { DIAS, HORARIOS, dataCurta, descreverNoite, hoje, inicioDaAula, segundaDe, somarDias } from '../../api/formato'
 import { Aviso, Botao, Campo, Etiqueta, Modal, TIPO_AULA, Titulo, classeEntrada, useToast } from '../../componentes/ui'
 import { ModalInformativo } from '../../componentes/Informativo'
 
@@ -57,7 +57,7 @@ export function Grade() {
   const cancelar = useMutation({
     mutationFn: () => post(`/aulas/${selecionada!.id}/cancelar`, { motivo }),
     onSuccess: (r) => {
-      toast('Aula cancelada.', 'sucesso')
+      toast('Noite cancelada (2 aulas).', 'sucesso')
       setSelecionada(null)
       setCancelando(false)
       setMotivo('')
@@ -72,7 +72,7 @@ export function Grade() {
     <div>
       <Titulo
         titulo={visao === 'minhas' ? 'Minha grade' : 'Grade da turma'}
-        subtitulo={`Semana de ${dataCurta(segunda)} a ${dataCurta(sexta)} · clique numa aula sua para trocar ou cancelar`}
+        subtitulo={`Semana de ${dataCurta(segunda)} a ${dataCurta(sexta)} · clique numa aula sua para trocar ou cancelar a noite`}
         acoes={
           <div className="flex flex-wrap items-center gap-2">
             <div className="w-48">
@@ -142,7 +142,7 @@ export function Grade() {
             <div>
               <div className="text-lg font-medium">{selecionada.disciplinaAtual ?? 'Sem aula'}</div>
               <div className="text-sm text-slate-500">
-                {selecionada.turma} · {descreverAula(selecionada.data, selecionada.horario)} {selecionada.sala && `· ${selecionada.sala}`}
+                {selecionada.turma} · {descreverNoite(selecionada.data)} {selecionada.sala && `· ${selecionada.sala}`}
               </div>
               {selecionada.tipo !== 'normal' && (
                 <div className="mt-2 text-sm text-slate-600">
@@ -155,14 +155,14 @@ export function Grade() {
             {podeAgir(selecionada) ? (
               !cancelando ? (
                 <div className="flex flex-wrap gap-2">
-                  <Botao onClick={() => navegar(`/solicitar?aula=${selecionada.id}`)}>Trocar esta aula</Botao>
+                  <Botao onClick={() => navegar(`/solicitar?aula=${selecionada.id}`)}>Trocar esta noite</Botao>
                   <Botao variante="perigo" onClick={() => setCancelando(true)}>
-                    Cancelar aula
+                    Cancelar a noite
                   </Botao>
                 </div>
               ) : (
                 <div className="space-y-3">
-                  <Campo rotulo="Motivo do cancelamento" dica="Obrigatório. A aula passa a contar como débito a repor.">
+                  <Campo rotulo="Motivo do cancelamento" dica="Obrigatório. As duas aulas da noite passam a contar como débito a repor.">
                     <textarea className={classeEntrada} rows={3} value={motivo} onChange={(e) => setMotivo(e.target.value)} />
                   </Campo>
                   {cancelar.error && <Aviso>{(cancelar.error as Error).message}</Aviso>}

@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { api, post } from '../../api/cliente'
 import { useSessao } from '../../api/sessao'
-import { descreverAula, hoje, inicioDaAula, somarDias } from '../../api/formato'
+import { descreverNoite, hoje, inicioDaAula, somarDias } from '../../api/formato'
 import { Abas, Aviso, Botao, Campo, Cartao, Titulo, Vazio, classeEntrada, useToast } from '../../componentes/ui'
 import { ModalInformativo } from '../../componentes/Informativo'
 import type { AulaGrade } from '../grade/Grade'
@@ -16,12 +16,12 @@ export function Solicitar() {
   const [tipo, setTipo] = useState<Tipo>((params.get('tipo') as Tipo) ?? 'compensatoria')
   return (
     <div>
-      <Titulo titulo="Solicitar troca de aula" subtitulo="A troca só é efetivada após a aprovação do colega. Enquanto estiver pendente, as aulas envolvidas ficam travadas." />
+      <Titulo titulo="Solicitar troca de aula" subtitulo="As trocas são sempre da noite inteira (2 aulas). Só valem após a aprovação do colega; enquanto isso, as noites envolvidas ficam travadas." />
       <Abas<Tipo>
         abas={[
           { id: 'compensatoria', rotulo: 'Compensatória' },
           { id: 'pontual', rotulo: 'Pontual' },
-          { id: 'reposicao', rotulo: 'Reposição em horário vago' },
+          { id: 'reposicao', rotulo: 'Reposição em noite vaga' },
         ]}
         ativa={tipo}
         aoMudar={setTipo}
@@ -103,26 +103,26 @@ function FormTroca({ tipo, aulaInicial }: { tipo: 'compensatoria' | 'pontual'; a
     <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
       <div className="space-y-5">
         <Cartao>
-          <Campo rotulo={tipo === 'compensatoria' ? '1. Aula que você vai ceder' : '1. Aula que você vai ceder ao colega'}>
+          <Campo rotulo={tipo === 'compensatoria' ? '1. Noite que você vai ceder' : '1. Noite que você vai ceder ao colega'}>
             <select className={classeEntrada} value={aulaId ?? ''} onChange={(e) => setAulaId(Number(e.target.value) || null)}>
-              <option value="">Escolha uma das suas próximas aulas…</option>
+              <option value="">Escolha uma das suas próximas noites…</option>
               {minhas.map((a) => (
                 <option key={a.id} value={a.id}>
-                  {a.turmas.join(' + ')} · {descreverAula(a.data, a.horario)} · {a.disciplinaAtual}
+                  {[...new Set(a.turmas)].join(' + ')} · {descreverNoite(a.data)} · {a.disciplinaAtual}
                 </option>
               ))}
             </select>
           </Campo>
-          {aulaInicial && !aula && aulas.length > 0 && <p className="mt-2 text-sm text-amber-700">A aula escolhida na grade não está mais disponível para troca.</p>}
+          {aulaInicial && !aula && aulas.length > 0 && <p className="mt-2 text-sm text-amber-700">A noite escolhida na grade não está mais disponível para troca.</p>}
         </Cartao>
 
         {aula && (
           <Cartao>
             <div className="mb-3 text-xs font-medium uppercase tracking-wide text-slate-500">
-              2. Colegas disponíveis em {descreverAula(aula.data, aula.horario)}
+              2. Colegas livres em {descreverNoite(aula.data)}
             </div>
             {buscandoColegas && <p className="text-sm text-slate-500">Buscando…</p>}
-            {!buscandoColegas && !disponiveis.length && <Vazio>Nenhum colega das turmas desta aula está livre nesse horário.</Vazio>}
+            {!buscandoColegas && !disponiveis.length && <Vazio>Nenhum colega das turmas desta noite está livre nos dois horários.</Vazio>}
             <div className="space-y-2">
               {disponiveis.map((c) => (
                 <label
@@ -132,13 +132,13 @@ function FormTroca({ tipo, aulaInicial }: { tipo: 'compensatoria' | 'pontual'; a
                   <input type="radio" checked={destinatarioId === c.professorId} onChange={() => setDestinatarioId(c.professorId)} />
                   <div className="flex-1">
                     <div className="text-sm font-medium">{c.nome}</div>
-                    <div className="text-xs text-slate-500">{c.disciplinas.map((d: any) => `${d.nome} (${d.turmas.join(', ')})`).join(' · ')}</div>
+                    <div className="text-xs text-slate-500">{c.disciplinas.map((d: any) => `${d.nome} (${[...new Set(d.turmas)].join(', ')})`).join(' · ')}</div>
                   </div>
                   <span className="text-xs font-medium text-emerald-600">✓ Disponível</span>
                 </label>
               ))}
             </div>
-            {ocupados > 0 && <p className="mt-2 text-xs text-slate-400">{ocupados} colega(s) da turma já têm aula nesse horário e não aparecem.</p>}
+            {ocupados > 0 && <p className="mt-2 text-xs text-slate-400">{ocupados} colega(s) da turma já têm aula nessa noite e não aparecem.</p>}
           </Cartao>
         )}
 
@@ -159,12 +159,12 @@ function FormTroca({ tipo, aulaInicial }: { tipo: 'compensatoria' | 'pontual'; a
 
         {colega && tipo === 'compensatoria' && (
           <Cartao>
-            <Campo rotulo={`3. Aula de ${colega.nome} que você assume em troca`}>
+            <Campo rotulo={`3. Noite de ${colega.nome} que você assume em troca`}>
               <select className={classeEntrada} value={aulaPedidaId ?? ''} onChange={(e) => setAulaPedidaId(Number(e.target.value) || null)}>
-                <option value="">{contrapartidas.length ? 'Escolha…' : 'Nenhuma aula do colega compatível (verifique choques de horário)'}</option>
+                <option value="">{contrapartidas.length ? 'Escolha…' : 'Nenhuma noite do colega compatível (verifique choques de horário)'}</option>
                 {contrapartidas.map((c) => (
                   <option key={c.aulaId} value={c.aulaId}>
-                    {c.turmas.join(' + ')} · {descreverAula(c.data, c.horario)} · {c.disciplina}
+                    {[...new Set(c.turmas)].join(' + ')} · {descreverNoite(c.data)} · {c.disciplina}
                   </option>
                 ))}
               </select>
@@ -180,11 +180,11 @@ function FormTroca({ tipo, aulaInicial }: { tipo: 'compensatoria' | 'pontual'; a
         ) : (
           <div className="space-y-3 text-sm">
             <Linha
-              titulo={descreverAula(aula.data, aula.horario)}
+              titulo={descreverNoite(aula.data)}
               antes={`${aula.disciplinaAtual} · ${usuario!.nome}`}
               depois={colega ? `${tipo === 'compensatoria' ? (pedida?.disciplina ?? '…') : (disciplinaDestino?.nome ?? '…')} · ${colega.nome}` : '…'}
             />
-            {tipo === 'compensatoria' && pedida && <Linha titulo={descreverAula(pedida.data, pedida.horario)} antes={`${pedida.disciplina} · ${colega.nome}`} depois={`${aula.disciplinaAtual} · ${usuario!.nome}`} />}
+            {tipo === 'compensatoria' && pedida && <Linha titulo={descreverNoite(pedida.data)} antes={`${pedida.disciplina} · ${colega.nome}`} depois={`${aula.disciplinaAtual} · ${usuario!.nome}`} />}
             <div className="space-y-1 border-t border-slate-100 pt-3 text-xs">
               <div className="flex justify-between">
                 <span className="text-slate-500">Choque de horário</span>
@@ -193,7 +193,7 @@ function FormTroca({ tipo, aulaInicial }: { tipo: 'compensatoria' | 'pontual'; a
               <div className="flex justify-between">
                 <span className="text-slate-500">Impacto no saldo</span>
                 <span className="font-medium text-slate-700">
-                  {tipo === 'compensatoria' ? '0 (compensada)' : colega ? `você −1 · ${colega.nome.split(' ')[0]} +1` : '—'}
+                  {tipo === 'compensatoria' ? 'nenhum (permuta)' : colega ? `você −2 · ${colega.nome.split(' ')[0]} +2` : '—'}
                 </span>
               </div>
             </div>
@@ -233,15 +233,15 @@ function FormReposicao() {
   const disc = minhas.find((d) => d.id === disciplinaId)
   const { data: vagos = [], isFetching } = useQuery({
     queryKey: ['vagos', disciplinaId, turmaId],
-    queryFn: () => api<any[]>(`/horarios-vagos?disciplinaId=${disciplinaId}${turmaId ? `&turmaId=${turmaId}` : ''}`),
+    queryFn: () => api<any[]>(`/noites-vagas?disciplinaId=${disciplinaId}${turmaId ? `&turmaId=${turmaId}` : ''}`),
     enabled: !!disciplinaId,
   })
-  const vago = vagos.find((v) => `${v.turmaId}|${v.data}|${v.horario}` === vagoChave)
+  const vago = vagos.find((v) => `${v.turmaId}|${v.data}` === vagoChave)
 
   const repor = useMutation({
-    mutationFn: () => post('/reposicoes', { disciplinaId, turmaId: vago.turmaId, data: vago.data, horario: vago.horario, sala: sala || undefined }),
+    mutationFn: () => post('/reposicoes', { disciplinaId, turmaId: vago.turmaId, data: vago.data, sala: sala || undefined }),
     onSuccess: (r) => {
-      toast('Reposição registrada.', 'sucesso')
+      toast('Reposição registrada (2 aulas).', 'sucesso')
       setVagoChave('')
       setInformativo(r.informativo)
     },
@@ -253,7 +253,7 @@ function FormReposicao() {
     <div className="grid max-w-3xl gap-5">
       <Cartao>
         <p className="mb-4 text-sm text-slate-500">
-          Ocupe um horário sem aula da turma (horário livre na grade, que ficou vago por troca ou cuja aula foi cancelada). Não precisa de aprovação; a aula conta como assumida no seu saldo.
+          Ocupe uma noite sem aula da turma (livre na grade, que ficou vaga por troca ou cuja aula foi cancelada). A reposição é sempre da noite inteira, não precisa de aprovação e conta 2 aulas assumidas no seu saldo.
         </p>
         <div className="grid gap-4 sm:grid-cols-2">
           <Campo rotulo="Disciplina">
@@ -288,12 +288,12 @@ function FormReposicao() {
       </Cartao>
       {disciplinaId && (
         <Cartao>
-          <Campo rotulo="Horário vago">
+          <Campo rotulo="Noite vaga">
             <select className={classeEntrada} value={vagoChave} onChange={(e) => setVagoChave(e.target.value)}>
-              <option value="">{isFetching ? 'Buscando…' : vagos.length ? 'Escolha…' : 'Nenhum horário vago encontrado'}</option>
+              <option value="">{isFetching ? 'Buscando…' : vagos.length ? 'Escolha…' : 'Nenhuma noite vaga encontrada'}</option>
               {vagos.map((v) => (
-                <option key={`${v.turmaId}|${v.data}|${v.horario}`} value={`${v.turmaId}|${v.data}|${v.horario}`}>
-                  {v.turma} · {descreverAula(v.data, v.horario)}
+                <option key={`${v.turmaId}|${v.data}`} value={`${v.turmaId}|${v.data}`}>
+                  {v.turma} · {descreverNoite(v.data)}
                   {v.observacao ? ` · ${v.observacao}` : ''}
                 </option>
               ))}

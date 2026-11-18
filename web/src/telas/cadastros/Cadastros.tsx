@@ -146,7 +146,7 @@ function AbaSemestre() {
       <Cartao>
         <h3 className="font-medium">Gerar calendário do semestre</h3>
         <p className="mt-1 mb-4 text-sm text-slate-500">
-          Cria uma aula para cada turma em cada data do semestre, a partir dos horários fixos das disciplinas. Datas de feriado já entram marcadas. Gerar de novo apaga as trocas registradas.
+          Cria as aulas de cada turma em cada data do semestre (os dois horários de cada noite), a partir das noites das disciplinas. Datas de feriado já entram marcadas. Gerar de novo apaga as trocas registradas.
         </p>
         {gerar.error && <div className="mb-3"><Aviso>{(gerar.error as Error).message}</Aviso></div>}
         <Botao disabled={gerar.isPending} onClick={() => gerar.mutate()}>
@@ -327,10 +327,10 @@ function AbaDisciplinas() {
 
   const salvar = useMutation({
     mutationFn: () => {
-      const corpo = { nome: ed.nome, professorId: Number(ed.professorId), totalAulas: Number(ed.totalAulas), turmaIds: ed.turmaIds, horarios: ed.horarios }
+      const corpo = { nome: ed.nome, professorId: Number(ed.professorId), totalAulas: Number(ed.totalAulas), turmaIds: ed.turmaIds, noites: ed.noites }
       return ed.id ? put(`/disciplinas/${ed.id}`, corpo) : post('/disciplinas', corpo)
     },
-    onSuccess: () => (toast('Disciplina salva. Gere o calendário de novo para aplicar mudanças de horário.', 'sucesso'), setEd(null), invalidar()),
+    onSuccess: () => (toast('Disciplina salva. Gere o calendário de novo para aplicar mudanças de noite.', 'sucesso'), setEd(null), invalidar()),
   })
   const remover = useMutation({ mutationFn: (id: number) => del(`/disciplinas/${id}`), onSuccess: () => (toast('Removida.', 'sucesso'), invalidar()), onError: (e) => toast((e as Error).message, 'erro') })
 
@@ -338,7 +338,7 @@ function AbaDisciplinas() {
     <Cartao className="!p-0">
       <div className="flex items-center justify-between border-b border-divisa px-5 py-3">
         <span className="text-sm text-slate-500">{disciplinas.length} disciplina(s)</span>
-        <Botao onClick={() => setEd({ nome: '', professorId: '', totalAulas: 38, turmaIds: [], horarios: [{ diaSemana: 1, horario: 1, sala: '' }] })}>Adicionar</Botao>
+        <Botao onClick={() => setEd({ nome: '', professorId: '', totalAulas: 38, turmaIds: [], noites: [{ diaSemana: 1, sala: '' }] })}>Adicionar</Botao>
       </div>
       <table className="w-full text-sm">
         <thead>
@@ -346,7 +346,7 @@ function AbaDisciplinas() {
             <th className="px-5 py-2 text-left font-medium">Disciplina</th>
             <th className="px-5 py-2 text-left font-medium">Professor</th>
             <th className="px-5 py-2 text-left font-medium">Turmas</th>
-            <th className="px-5 py-2 text-left font-medium">Horários fixos</th>
+            <th className="px-5 py-2 text-left font-medium">Noites</th>
             <th className="px-5 py-2 text-right font-medium">Aulas</th>
             <th />
           </tr>
@@ -357,7 +357,7 @@ function AbaDisciplinas() {
               <td className="px-5 py-2.5 font-medium">{d.nome}</td>
               <td className="px-5">{d.professor}</td>
               <td className="px-5">{d.turmaIds.map(nomeTurma).join(' + ')}</td>
-              <td className="px-5 text-xs text-slate-600">{d.horarios.map((h: any) => `${DIAS[h.diaSemana].slice(0, 3)} ${h.horario}º${h.sala ? ` (${h.sala})` : ''}`).join(' · ')}</td>
+              <td className="px-5 text-xs text-slate-600">{d.noites.map((h: any) => `${DIAS[h.diaSemana].replace('-feira', '')}${h.sala ? ` (${h.sala})` : ''}`).join(' · ')}</td>
               <td className="px-5 text-right tabular-nums">{d.totalAulas}</td>
               <td className="px-5 text-right whitespace-nowrap">
                 <button className="mr-3 text-xs font-medium text-marca-600 hover:underline" onClick={() => setEd({ ...d })}>
@@ -407,12 +407,12 @@ function AbaDisciplinas() {
                 ))}
               </div>
             </Campo>
-            <Campo rotulo="Horários fixos">
+            <Campo rotulo="Noites" dica="A disciplina ocupa sempre a noite inteira: 1º (19:10–20:25) e 2º (20:45–22:00) horários.">
               <div className="space-y-2">
-                {ed.horarios.map((h: any, i: number) => {
-                  const mudar = (novo: any) => setEd({ ...ed, horarios: ed.horarios.map((x: any, j: number) => (j === i ? { ...x, ...novo } : x)) })
+                {ed.noites.map((h: any, i: number) => {
+                  const mudar = (novo: any) => setEd({ ...ed, noites: ed.noites.map((x: any, j: number) => (j === i ? { ...x, ...novo } : x)) })
                   return (
-                    <div key={i} className="grid grid-cols-[1fr_1fr_1fr_auto] gap-2">
+                    <div key={i} className="grid grid-cols-[1fr_1fr_auto] gap-2">
                       <select className={classeEntrada} value={h.diaSemana} onChange={(e) => mudar({ diaSemana: Number(e.target.value) })}>
                         {[1, 2, 3, 4, 5, 6].map((d) => (
                           <option key={d} value={d}>
@@ -420,19 +420,15 @@ function AbaDisciplinas() {
                           </option>
                         ))}
                       </select>
-                      <select className={classeEntrada} value={h.horario} onChange={(e) => mudar({ horario: Number(e.target.value) })}>
-                        <option value={1}>1º · 19:10–20:25</option>
-                        <option value={2}>2º · 20:45–22:00</option>
-                      </select>
                       <input className={classeEntrada} placeholder="Sala" value={h.sala} onChange={(e) => mudar({ sala: e.target.value })} />
-                      <Botao variante="fantasma" onClick={() => setEd({ ...ed, horarios: ed.horarios.filter((_: any, j: number) => j !== i) })}>
+                      <Botao variante="fantasma" onClick={() => setEd({ ...ed, noites: ed.noites.filter((_: any, j: number) => j !== i) })}>
                         ✕
                       </Botao>
                     </div>
                   )
                 })}
-                <Botao variante="secundario" onClick={() => setEd({ ...ed, horarios: [...ed.horarios, { diaSemana: 1, horario: 1, sala: '' }] })}>
-                  + horário
+                <Botao variante="secundario" onClick={() => setEd({ ...ed, noites: [...ed.noites, { diaSemana: 1, sala: '' }] })}>
+                  + noite
                 </Botao>
               </div>
             </Campo>

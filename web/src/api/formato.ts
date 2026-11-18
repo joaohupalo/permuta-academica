@@ -26,6 +26,8 @@ export const dataCurta = (iso: string) => `${iso.slice(8, 10)}/${iso.slice(5, 7)
 export const dataBR = (iso: string) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}/${iso.slice(0, 4)}`
 export const descreverAula = (data: string, horario: number) =>
   `${DIAS_CURTOS[diaSemana(data)]} ${dataCurta(data)} · ${horario}º horário (${HORARIOS[horario].inicio}–${HORARIOS[horario].fim})`
+/** Toda troca é da noite inteira: os dois horários. */
+export const descreverNoite = (data: string) => `${DIAS_CURTOS[diaSemana(data)]} ${dataCurta(data)} · noite inteira (19:10–22:00)`
 export const inicioDaAula = (data: string, horario: number) => {
   const d = deISO(data)
   const [h, m] = HORARIOS[horario].inicio.split(':').map(Number)

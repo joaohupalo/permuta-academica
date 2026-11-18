@@ -34,7 +34,7 @@
 | **T21** | README | Como rodar, contas de teste, roteiro da demonstração | RNF-01, RNF-04 |
 | **T23** | Identidade visual | Visual alinhado ao portal acadêmico da Unimater (JACAD): logo, paleta, fonte Roboto, menu lateral claro com ícones, barra superior com o usuário, cartões brancos; TV nas cores da instituição | RNF-03, RNF-04 |
 | **T24** | Noite inteira e compensatória neutra | Grupo de aulas por noite (2 horários); choques em todos os horários; reposição e cancelamento por noite; cadastro de disciplina por noites; coluna `disciplina_responsavel_id` e saldo por responsável; massa refeita sem noites divididas | RN-11, CA-05, CA-06, CA-10, CA-11, CA-13, CA-21, CA-22 |
-| **T25** | Acerto de contas | Saldo por aulas que acontecem (assumida cancelada não conta); `GET /acertos` casando devedores e credores por turma; reposição em noite vazia só com débito; painel de acertos na tela de saldo com atalhos para ceder ou repor | RF-20, RN-12, CA-23, CA-24, CA-25 |
+| **T25** | Acerto de contas | Saldo por aulas que acontecem (assumida cancelada não conta); `GET /acertos` casando devedores e credores por turma; aula adiantada (reposição sem débito) compensada por cancelamento futuro; painel de acertos na tela de saldo com atalhos para ceder, repor ou cancelar | RF-20, RN-12, CA-23, CA-24, CA-25 |
 
 ## Etapa 5 — Validação
 

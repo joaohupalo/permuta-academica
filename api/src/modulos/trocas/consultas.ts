@@ -29,6 +29,21 @@ export function turmasDaDisciplina(tx: Tx, disciplinaId: number): Set<number> {
   )
 }
 
+/** RN-03 + RN-11: o professor tem aula em algum dos horários dessas aulas (a noite inteira)? */
+export function professorOcupadoNoGrupo(tx: Tx, professorId: number, linhas: Pick<Aula, 'data' | 'horario'>[], ignorarGrupos: string[] = []) {
+  const vistos = new Set<string>()
+  for (const l of linhas) {
+    const k = `${l.data}|${l.horario}`
+    if (vistos.has(k)) continue
+    vistos.add(k)
+    if (professorOcupado(tx, professorId, l.data, l.horario, ignorarGrupos)) return true
+  }
+  return false
+}
+
+/** As duas linhas de horário de uma noite, para checar choques antes de a aula existir. */
+export const noiteInteira = (data: string) => [1, 2].map((horario) => ({ data, horario }))
+
 /** RN-03: o professor já tem aula acontecendo nesse horário? Aulas do mesmo grupo contam como uma. */
 export function professorOcupado(tx: Tx, professorId: number, data: string, horario: number, ignorarGrupos: string[] = []) {
   return tx
@@ -64,7 +79,7 @@ export function resumirGrupo(tx: Tx, linhas: Aula[]): ResumoAula {
   const a = linhas[0]
   return {
     aulaId: a.id,
-    turmas: linhas.map((l) => n.turma(l.turmaId)),
+    turmas: [...new Set(linhas.map((l) => n.turma(l.turmaId)))],
     data: a.data,
     horario: a.horario,
     disciplina: n.disciplina(a.disciplinaAtualId) ?? '—',

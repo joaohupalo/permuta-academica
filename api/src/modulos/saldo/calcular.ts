@@ -60,14 +60,15 @@ export function calcularSaldo(ctx: Contexto): LinhaSaldo[] {
 
   for (const a of db.select().from(aula).all()) {
     const encerrada = fimDaAula(a.data, a.horario) <= agora
-    const prevista = de(a.disciplinaPrevistaId, a.turmaId)
+    // Contagem pela disciplina responsável (spec §7): a compensatória transfere a responsabilidade; a pontual não.
+    const responsavel = de(a.disciplinaResponsavelId, a.turmaId)
     const atual = de(a.disciplinaAtualId, a.turmaId)
 
-    if (prevista) prevista.previstas++
-    if (a.status === 'feriado' && encerrada && prevista) prevista.ministradas++
+    if (responsavel) responsavel.previstas++
+    if (a.status === 'feriado' && encerrada && responsavel) responsavel.ministradas++
     if (a.status === 'normal' && encerrada && atual) atual.ministradas++
-    if (prevista && a.disciplinaAtualId !== a.disciplinaPrevistaId) prevista.cedidas++
-    if (atual && a.disciplinaPrevistaId !== a.disciplinaAtualId) atual.assumidas++
+    if (responsavel && a.disciplinaAtualId !== a.disciplinaResponsavelId) responsavel.cedidas++
+    if (atual && a.disciplinaResponsavelId !== a.disciplinaAtualId) atual.assumidas++
     if (a.status === 'cancelada' && atual) atual.canceladas++
   }
 

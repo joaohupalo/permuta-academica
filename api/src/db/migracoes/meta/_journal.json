@@ -15,6 +15,13 @@
       "when": 1794944207044,
       "tag": "0001_reposicao_em_aula_cancelada",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1795014076434,
+      "tag": "0002_responsavel_pela_contagem",
+      "breakpoints": true
     }
   ]
 }

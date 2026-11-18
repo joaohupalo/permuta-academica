@@ -65,6 +65,8 @@ export const aula = sqliteTable(
     sala: text('sala').notNull().default(''),
     grupo: text('grupo').notNull(),
     disciplinaPrevistaId: integer('disciplina_prevista_id').references(() => disciplina.id, { onDelete: 'set null' }),
+    /** A quem a aula pertence para o saldo. A compensatória transfere; a pontual não. */
+    disciplinaResponsavelId: integer('disciplina_responsavel_id').references(() => disciplina.id, { onDelete: 'set null' }),
     disciplinaAtualId: integer('disciplina_atual_id').references(() => disciplina.id, { onDelete: 'set null' }),
     professorAtualId: integer('professor_atual_id').references(() => usuario.id, { onDelete: 'set null' }),
     status: text('status', { enum: STATUS_AULA }).notNull().default('normal'),

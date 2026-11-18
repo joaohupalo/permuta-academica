@@ -42,8 +42,32 @@ describe('Cadastros e CSV', () => {
       professorId: amb.idPessoa('Rafael Nunes'),
       totalAulas: 20,
       turmaIds: [amb.idTurma('SI 4º')],
-      horarios: [{ diaSemana: 4, horario: 1, sala: '' }], // quinta 1º: SI 4º já tem Banco de Dados II
+      noites: [{ diaSemana: 4, sala: '' }], // quinta: SI 4º já tem Banco de Dados II
     })
     expect(r.statusCode).toBe(409)
+  })
+
+  it('CA-22: disciplina é cadastrada por noite e ocupa sempre os dois horários', async () => {
+    const amb = await criarAmbiente()
+    const admin = amb.como('coordenacao')
+    // Formato antigo, por horário, não é aceito
+    const velho = await admin.post('/disciplinas', {
+      nome: 'Só um horário',
+      professorId: amb.idPessoa('Fernanda Dias'),
+      totalAulas: 20,
+      turmaIds: [amb.idTurma('SI 4º')],
+      horarios: [{ diaSemana: 5, horario: 1, sala: '' }],
+    })
+    expect(velho.statusCode).toBe(400)
+    const ok = await admin.post('/disciplinas', {
+      nome: 'Redes de Computadores',
+      professorId: amb.idPessoa('Fernanda Dias'),
+      totalAulas: 30,
+      turmaIds: [amb.idTurma('SI 4º')],
+      noites: [{ diaSemana: 5, sala: 'Lab 2' }],
+    })
+    expect(ok.statusCode).toBe(201)
+    const d = ((await admin.get('/disciplinas')).json() as any[]).find((x) => x.nome === 'Redes de Computadores')
+    expect(d.noites).toEqual([{ diaSemana: 5, sala: 'Lab 2' }])
   })
 })

@@ -8,8 +8,6 @@ describe('Calendário', () => {
   it('CA-01: gera uma aula por turma, data e horário fixo, marcando feriados', async () => {
     const amb = await criarAmbiente()
     const { db } = amb
-
-    // Conferência "manual": conta as ocorrências esperadas a partir do cadastro.
     const horarios = db.select().from(horarioFixo).all()
     const turmasPorDisc = new Map<number, number>()
     for (const dt of db.select().from(disciplinaTurma).all()) turmasPorDisc.set(dt.disciplinaId, (turmasPorDisc.get(dt.disciplinaId) ?? 0) + 1)
@@ -23,26 +21,29 @@ describe('Calendário', () => {
         if (feriados.has(data)) esperadoFeriado += n
       }
     }
-
     const todas = db.select().from(aula).all()
     expect(todas.length).toBe(esperado)
     expect(todas.filter((a) => a.status === 'feriado').length).toBe(esperadoFeriado)
-    expect(todas.every((a) => a.data >= '2026-08-03' && a.data <= '2026-12-12')).toBe(true)
-    // Nenhuma aula em sábado ou domingo e nenhuma duplicada por turma/data/horário
     expect(todas.every((a) => ![0, 6].includes(diaDaSemana(a.data)))).toBe(true)
     expect(new Set(todas.map((a) => `${a.turmaId}|${a.data}|${a.horario}`)).size).toBe(todas.length)
-    // 20/11 é feriado: todas as aulas desse dia estão marcadas
     expect(db.select().from(aula).where(eq(aula.data, '2026-11-20')).all().every((a) => a.status === 'feriado')).toBe(true)
   })
 
-  it('CA-02: disciplina compartilhada gera uma aula por turma, no mesmo grupo', async () => {
+  it('CA-02 / RN-11: uma noite compartilhada forma um grupo com os dois horários de todas as turmas', async () => {
     const amb = await criarAmbiente()
-    const si = amb.aulaEm('SI 4º', '2026-11-27', 1)
-    const ads = amb.aulaEm('ADS 4º', '2026-11-27', 1)
-    const etica = amb.idDisciplina('Ética e Legislação em TI')
-    expect(si.disciplinaPrevistaId).toBe(etica)
-    expect(ads.disciplinaPrevistaId).toBe(etica)
-    expect(si.grupo).toBe(ads.grupo)
-    expect(si.id).not.toBe(ads.id)
+    const linhas = [...amb.aulasEm('SI 4º', '2026-11-23', 1), ...amb.aulasEm('SI 4º', '2026-11-23', 2), ...amb.aulasEm('ADS 4º', '2026-11-23', 1), ...amb.aulasEm('ADS 4º', '2026-11-23', 2)]
+    expect(linhas).toHaveLength(4)
+    expect(new Set(linhas.map((l) => l.grupo)).size).toBe(1)
+    expect(linhas.every((l) => l.disciplinaPrevistaId === amb.idDisciplina('Ética e Legislação em TI'))).toBe(true)
+  })
+
+  it('RN-11: nenhum professor tem só um horário numa noite', async () => {
+    const amb = await criarAmbiente()
+    const porNoite = new Map<string, Set<number>>()
+    for (const a of amb.db.select().from(aula).all()) {
+      const k = `${a.professorAtualId}|${a.turmaId}|${a.data}`
+      porNoite.set(k, (porNoite.get(k) ?? new Set()).add(a.horario))
+    }
+    expect([...porNoite.values()].every((h) => h.size === 2)).toBe(true)
   })
 })

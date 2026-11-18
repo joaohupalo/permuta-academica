@@ -39,43 +39,41 @@ const PROFESSORES = [
   'Isabela Costa', 'Juliana Rocha', 'Leonardo Pires', 'Mariana Teixeira', 'Rafael Nunes', 'Sérgio Campos', 'Tatiane Moura',
 ]
 
-// [disciplina, professor, turmas, horários "dia.horário" (1 = segunda ... 5 = sexta), sala]
-const GRADE: [string, string, string[], string[], string][] = [
-  // SI 4º — turma do roteiro de demonstração (sexta, 2º horário fica vago)
-  ['Banco de Dados II', 'Ana Souza', ['SI 4º'], ['4.1', '4.2'], 'Lab 3'],
-  ['Engenharia de Software', 'Bruno Lima', ['SI 4º'], ['3.1', '3.2'], 'Sala 204'],
-  ['Redes de Computadores', 'Fernanda Dias', ['SI 4º'], ['1.1', '1.2'], 'Lab 2'],
-  ['Programação Web', 'Carla Mendes', ['SI 4º'], ['2.1', '2.2'], 'Lab 1'],
-  ['Ética e Legislação em TI', 'Hélio Martins', ['SI 4º', 'ADS 4º'], ['5.1'], 'Auditório'],
-  // ADS 4º
-  ['Programação Mobile', 'Hélio Martins', ['ADS 4º'], ['1.1', '1.2'], 'Lab 4'],
-  ['Banco de Dados', 'Ana Souza', ['ADS 4º'], ['2.1', '2.2'], 'Lab 3'],
-  ['Gestão de Projetos', 'Gustavo Reis', ['ADS 4º'], ['3.1', '3.2'], 'Sala 105'],
-  ['Interface Humano-Computador', 'Isabela Costa', ['ADS 4º'], ['4.1', '4.2'], 'Sala 106'],
-  ['Testes de Software', 'Bruno Lima', ['ADS 4º'], ['5.2'], 'Lab 4'],
-  // SI 2º (sexta, 2º horário vago)
-  ['Algoritmos e Programação', 'Eduardo Alves', ['SI 2º'], ['1.1', '1.2', '3.1'], 'Lab 1'],
-  ['Fundamentos de Sistemas de Informação', 'Juliana Rocha', ['SI 2º'], ['2.1', '2.2'], 'Sala 201'],
-  ['Matemática Discreta', 'Leonardo Pires', ['SI 2º'], ['3.2', '4.1', '4.2'], 'Sala 201'],
-  ['Inglês Técnico', 'Mariana Teixeira', ['SI 2º'], ['5.1'], 'Sala 202'],
-  // SI 6º (sexta, 2º horário vago)
-  ['Sistemas Distribuídos', 'Rafael Nunes', ['SI 6º'], ['1.1', '1.2'], 'Lab 5'],
-  ['Inteligência Artificial', 'Isabela Costa', ['SI 6º'], ['2.1', '2.2'], 'Lab 5'],
-  ['Segurança da Informação', 'Sérgio Campos', ['SI 6º'], ['3.1', '3.2'], 'Lab 2'],
-  ['Empreendedorismo', 'Tatiane Moura', ['SI 6º'], ['4.1', '4.2'], 'Sala 203'],
-  ['Governança de TI', 'Gustavo Reis', ['SI 6º'], ['5.1'], 'Sala 203'],
-  // SI 8º (quarta, 2º horário vago)
-  ['Trabalho de Conclusão de Curso II', 'Juliana Rocha', ['SI 8º'], ['1.1', '1.2'], 'Sala 205'],
-  ['Computação em Nuvem', 'Rafael Nunes', ['SI 8º'], ['2.1', '2.2'], 'Lab 6'],
-  ['Auditoria de Sistemas', 'Leonardo Pires', ['SI 8º'], ['3.1'], 'Sala 205'],
-  ['Tópicos Avançados em Computação', 'Sérgio Campos', ['SI 8º'], ['4.1', '4.2'], 'Lab 6'],
-  ['Direito e Legislação Digital', 'Tatiane Moura', ['SI 8º'], ['5.1', '5.2'], 'Sala 205'],
-  // ADS 2º (sexta, 2º horário vago)
-  ['Comunicação e Expressão', 'Mariana Teixeira', ['ADS 2º'], ['1.1', '1.2'], 'Sala 102'],
-  ['Lógica de Programação', 'Eduardo Alves', ['ADS 2º'], ['2.1', '2.2'], 'Lab 1'],
-  ['Arquitetura de Computadores', 'Fernanda Dias', ['ADS 2º'], ['3.1', '3.2'], 'Lab 2'],
-  ['Sistemas Operacionais', 'Carla Mendes', ['ADS 2º'], ['4.1', '4.2'], 'Lab 1'],
-  ['Matemática Aplicada', 'Leonardo Pires', ['ADS 2º'], ['5.1'], 'Sala 102'],
+// [disciplina, professor, turmas, noites (1 = segunda ... 5 = sexta), sala]
+// Cada noite tem os dois horários (19:10–20:25 e 20:45–22:00) com o mesmo professor (RN-11).
+const GRADE: [string, string, string[], number[], string][] = [
+  // SI 4º — turma do roteiro de demonstração (sexta vaga, para reposição)
+  ['Ética e Legislação em TI', 'Hélio Martins', ['SI 4º', 'ADS 4º'], [1], 'Auditório'],
+  ['Programação Web', 'Carla Mendes', ['SI 4º'], [2], 'Lab 1'],
+  ['Engenharia de Software', 'Bruno Lima', ['SI 4º'], [3], 'Sala 204'],
+  ['Banco de Dados II', 'Ana Souza', ['SI 4º'], [4], 'Lab 3'],
+  // ADS 4º (segunda compartilhada com o SI 4º)
+  ['Banco de Dados', 'Ana Souza', ['ADS 4º'], [2], 'Lab 3'],
+  ['Gestão de Projetos', 'Gustavo Reis', ['ADS 4º'], [3], 'Sala 105'],
+  ['Interface Humano-Computador', 'Isabela Costa', ['ADS 4º'], [4], 'Sala 106'],
+  ['Programação Mobile', 'Hélio Martins', ['ADS 4º'], [5], 'Lab 4'],
+  // SI 2º
+  ['Algoritmos e Programação', 'Eduardo Alves', ['SI 2º'], [1, 3], 'Lab 1'],
+  ['Fundamentos de Sistemas de Informação', 'Juliana Rocha', ['SI 2º'], [2], 'Sala 201'],
+  ['Matemática Discreta', 'Leonardo Pires', ['SI 2º'], [4], 'Sala 201'],
+  ['Inglês Técnico', 'Mariana Teixeira', ['SI 2º'], [5], 'Sala 202'],
+  // SI 6º (sexta vaga)
+  ['Sistemas Distribuídos', 'Rafael Nunes', ['SI 6º'], [1], 'Lab 5'],
+  ['Inteligência Artificial', 'Isabela Costa', ['SI 6º'], [2], 'Lab 5'],
+  ['Segurança da Informação', 'Sérgio Campos', ['SI 6º'], [3], 'Lab 2'],
+  ['Empreendedorismo', 'Tatiane Moura', ['SI 6º'], [4], 'Sala 203'],
+  // SI 8º
+  ['Trabalho de Conclusão de Curso II', 'Juliana Rocha', ['SI 8º'], [1], 'Sala 205'],
+  ['Computação em Nuvem', 'Rafael Nunes', ['SI 8º'], [2], 'Lab 6'],
+  ['Auditoria de Sistemas', 'Leonardo Pires', ['SI 8º'], [3], 'Sala 205'],
+  ['Tópicos Avançados em Computação', 'Sérgio Campos', ['SI 8º'], [4], 'Lab 6'],
+  ['Direito e Legislação Digital', 'Tatiane Moura', ['SI 8º'], [5], 'Sala 205'],
+  // ADS 2º
+  ['Comunicação e Expressão', 'Mariana Teixeira', ['ADS 2º'], [1], 'Sala 102'],
+  ['Lógica de Programação', 'Eduardo Alves', ['ADS 2º'], [2], 'Lab 1'],
+  ['Arquitetura de Computadores', 'Fernanda Dias', ['ADS 2º'], [3], 'Lab 2'],
+  ['Sistemas Operacionais', 'Carla Mendes', ['ADS 2º'], [4], 'Lab 1'],
+  ['Matemática Aplicada', 'Leonardo Pires', ['ADS 2º'], [5], 'Sala 102'],
 ]
 
 export const emailDe = (nome: string) =>
@@ -100,8 +98,8 @@ export function cadastrarBase(db: Banco, opcoes: { semestre?: typeof SEMESTRE } 
   for (const [data, descricao] of FERIADOS) db.insert(feriado).values({ data, descricao }).run()
 
   const disciplinas = new Map<string, number>()
-  for (const [nome, prof, ts, hs, sala] of GRADE) {
-    const horarios = hs.map((h) => h.split('.').map(Number) as [number, number])
+  for (const [nome, prof, ts, noites, sala] of GRADE) {
+    const horarios = noites.flatMap((dia) => [[dia, 1], [dia, 2]] as [number, number][])
     let total = 0
     for (const data of datasEntre(sem.inicio, sem.fim)) total += horarios.filter(([dia]) => dia === diaDaSemana(data)).length
     const id = db.insert(disciplina).values({ nome, professorId: pessoas.get(prof)!, totalAulas: total }).returning().get().id
@@ -132,7 +130,7 @@ function registrarHistorico(db: Banco, base: ReturnType<typeof cadastrarBase>) {
   em('2026-08-01T09:00:00')
   registrar(db, relogio.atual, { usuarioId: 1, tipo: 'calendario_gerado', descricao: `Calendário do semestre ${SEMESTRE.nome} gerado: ${base.aulas} aulas` })
 
-  // Pontual: Rafael cede uma aula de Sistemas Distribuídos a Isabela (IA) — Rafael −1, Isabela +1
+  // Pontual: Rafael cede uma noite de Sistemas Distribuídos a Isabela (IA) — Rafael −2, Isabela +2
   em('2026-09-14T10:00:00')
   const p1 = criarPedido(ctx, p('Rafael Nunes'), {
     tipo: 'pontual',
@@ -143,13 +141,13 @@ function registrarHistorico(db: Banco, base: ReturnType<typeof cadastrarBase>) {
   em('2026-09-14T15:30:00')
   responderPedido(ctx, p('Isabela Costa'), p1.id, 'aprovar')
 
-  // Cancelamento e reposição: Sérgio cancela e repõe no horário vago de sexta — volta a zero
+  // Cancelamento e reposição: Sérgio cancela uma noite e repõe na sexta vaga do SI 6º — volta a zero
   em('2026-10-01T08:00:00')
-  cancelarAula(ctx, p('Sérgio Campos'), aulaDe(db, t('SI 6º'), '2026-10-07', 2).id, 'Participação em banca de mestrado')
+  cancelarAula(ctx, p('Sérgio Campos'), aulaDe(db, t('SI 6º'), '2026-10-07', 1).id, 'Participação em banca de mestrado')
   em('2026-10-05T11:00:00')
-  reporAula(ctx, p('Sérgio Campos'), { disciplinaId: d('Segurança da Informação'), turmaId: t('SI 6º'), data: '2026-10-16', horario: 2, sala: 'Lab 2' })
+  reporAula(ctx, p('Sérgio Campos'), { disciplinaId: d('Segurança da Informação'), turmaId: t('SI 6º'), data: '2026-10-16', sala: 'Lab 2' })
 
-  // Compensatória: Juliana (terça) ⇄ Leonardo (quinta) no SI 2º — saldo zero para os dois
+  // Compensatória: Juliana (terça) ⇄ Leonardo (quinta) no SI 2º — ninguém fica com cedida/assumida
   em('2026-10-20T14:00:00')
   const p2 = criarPedido(ctx, p('Juliana Rocha'), {
     tipo: 'compensatoria',
@@ -162,25 +160,25 @@ function registrarHistorico(db: Banco, base: ReturnType<typeof cadastrarBase>) {
 
   // Pedido recusado
   em('2026-10-26T18:00:00')
-  const p3 = criarPedido(ctx, p('Fernanda Dias'), {
+  const p3 = criarPedido(ctx, p('Carla Mendes'), {
     tipo: 'compensatoria',
-    aulaId: aulaDe(db, t('SI 4º'), '2026-11-09', 1).id,
-    destinatarioId: p('Carla Mendes').id,
-    aulaPedidaId: aulaDe(db, t('SI 4º'), '2026-11-10', 1).id,
+    aulaId: aulaDe(db, t('SI 4º'), '2026-11-10', 1).id,
+    destinatarioId: p('Bruno Lima').id,
+    aulaPedidaId: aulaDe(db, t('SI 4º'), '2026-11-11', 1).id,
   })
   em('2026-10-27T08:20:00')
-  responderPedido(ctx, p('Carla Mendes'), p3.id, 'recusar')
+  responderPedido(ctx, p('Bruno Lima'), p3.id, 'recusar')
 
-  // Pontual: Carla cede uma aula a Fernanda (Redes) — Carla fica devendo 1
+  // Pontual: Carla cede uma noite a Hélio (Ética) — Carla fica devendo 2
   em('2026-11-09T09:00:00')
   const p4 = criarPedido(ctx, p('Carla Mendes'), {
     tipo: 'pontual',
     aulaId: aulaDe(db, t('SI 4º'), '2026-11-10', 1).id,
-    destinatarioId: p('Fernanda Dias').id,
-    disciplinaDestinoId: d('Redes de Computadores'),
+    destinatarioId: p('Hélio Martins').id,
+    disciplinaDestinoId: d('Ética e Legislação em TI'),
   })
   em('2026-11-09T12:45:00')
-  responderPedido(ctx, p('Fernanda Dias'), p4.id, 'aprovar')
+  responderPedido(ctx, p('Hélio Martins'), p4.id, 'aprovar')
 
   // Pedido pendente, aguardando resposta de Mariana
   em('2026-11-16T20:30:00')

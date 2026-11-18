@@ -6,7 +6,7 @@ import type { Contexto } from '../../contexto.js'
 import { aula, disciplina, evento, pedido, STATUS_PEDIDO, turma, usuario } from '../../db/schema.js'
 import { autenticar } from '../auth/guardas.js'
 import { classificar } from './consultas.js'
-import { candidatos, cancelarAula, contrapartidas, criarPedido, horariosVagos, reporAula, responderPedido } from './servico.js'
+import { candidatos, cancelarAula, contrapartidas, criarPedido, noitesVagas, reporAula, responderPedido } from './servico.js'
 
 const data = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'use o formato AAAA-MM-DD')
 const id = z.coerce.number().int().positive()
@@ -71,9 +71,9 @@ export function rotasTrocas(app: FastifyInstance, ctx: Contexto) {
     return contrapartidas(ctx, req.user.id, z.object({ id }).parse(req.params).id, professorId)
   })
 
-  app.get('/horarios-vagos', opt, async (req) => {
+  app.get('/noites-vagas', opt, async (req) => {
     const q = z.object({ disciplinaId: id, turmaId: id.optional() }).parse(req.query)
-    return horariosVagos(ctx, req.user.id, q.disciplinaId, q.turmaId)
+    return noitesVagas(ctx, req.user.id, q.disciplinaId, q.turmaId)
   })
 
   app.post('/pedidos', opt, async (req, res) => {
@@ -134,7 +134,7 @@ export function rotasTrocas(app: FastifyInstance, ctx: Contexto) {
 
   app.post('/reposicoes', opt, async (req, res) => {
     const corpo = z
-      .object({ disciplinaId: id, turmaId: id, data, horario: z.union([z.literal(1), z.literal(2)]), sala: z.string().trim().max(40).optional() })
+      .object({ disciplinaId: id, turmaId: id, data, sala: z.string().trim().max(40).optional() })
       .parse(req.body)
     return res.status(201).send(reporAula(ctx, req.user, corpo))
   })

@@ -1,98 +1,71 @@
 import { describe, expect, it } from 'vitest'
-import { criarAmbiente } from './ambiente.js'
+import { criarAmbiente, pontualAnaBruno } from './ambiente.js'
 
 describe('Reposição e cancelamento', () => {
-  it('CA-11: reposição em horário vazio cria a aula, sem aprovação, e conta como assumida', async () => {
+  it('CA-11: reposição em noite vaga ocupa os dois horários, sem aprovação, e conta 2 assumidas', async () => {
     const amb = await criarAmbiente()
-    // SI 4º não tem aula na sexta, 2º horário
-    expect(amb.aulasEm('SI 4º', '2026-11-27', 2)).toHaveLength(0)
-    const r = await amb.como('Ana Souza').post('/reposicoes', {
-      disciplinaId: amb.idDisciplina('Banco de Dados II'),
-      turmaId: amb.idTurma('SI 4º'),
-      data: '2026-11-27',
-      horario: 2,
-    })
+    expect(amb.aulasEm('SI 4º', '2026-11-27', 1)).toHaveLength(0)
+    const r = await amb.como('Ana Souza').post('/reposicoes', { disciplinaId: amb.idDisciplina('Banco de Dados II'), turmaId: amb.idTurma('SI 4º'), data: '2026-11-27' })
     expect(r.statusCode).toBe(201)
-    const nova = amb.aulaEm('SI 4º', '2026-11-27', 2)
-    expect(nova.disciplinaPrevistaId).toBeNull()
-    expect(nova.disciplinaAtualId).toBe(amb.idDisciplina('Banco de Dados II'))
-    expect((await amb.saldoDe('Banco de Dados II', 'SI 4º')).assumidas).toBe(1)
+    for (const h of [1, 2]) {
+      const nova = amb.aulaEm('SI 4º', '2026-11-27', h)
+      expect(nova.disciplinaAtualId).toBe(amb.idDisciplina('Banco de Dados II'))
+      expect(nova.disciplinaPrevistaId).toBeNull()
+    }
+    expect((await amb.saldoDe('Banco de Dados II', 'SI 4º')).assumidas).toBe(2)
   })
 
-  it('CA-11: quem cedeu e repõe volta a zero', async () => {
+  it('CA-11: quem cedeu uma noite e repõe outra volta a zero', async () => {
     const amb = await criarAmbiente()
-    const p = (
-      await amb.como('Ana Souza').post('/pedidos', {
-        tipo: 'pontual',
-        aulaId: amb.aulaEm('SI 4º', '2026-11-26', 1).id,
-        destinatarioId: amb.idPessoa('Bruno Lima'),
-        disciplinaDestinoId: amb.idDisciplina('Engenharia de Software'),
-      })
-    ).json()
+    const p = (await pontualAnaBruno(amb)).json()
     await amb.como('Bruno Lima').post(`/pedidos/${p.id}/aprovar`)
-    expect((await amb.saldoDe('Banco de Dados II', 'SI 4º')).saldo).toBe(-1)
-    await amb.como('Ana Souza').post('/reposicoes', { disciplinaId: amb.idDisciplina('Banco de Dados II'), turmaId: amb.idTurma('SI 4º'), data: '2026-12-04', horario: 2 })
+    expect((await amb.saldoDe('Banco de Dados II', 'SI 4º')).saldo).toBe(-2)
+    await amb.como('Ana Souza').post('/reposicoes', { disciplinaId: amb.idDisciplina('Banco de Dados II'), turmaId: amb.idTurma('SI 4º'), data: '2026-12-04' })
     expect((await amb.saldoDe('Banco de Dados II', 'SI 4º')).saldo).toBe(0)
   })
 
-  it('CA-12: reposição recusada em horário ocupado, em feriado ou com choque', async () => {
+  it('CA-12: reposição recusada em noite ocupada, em feriado ou com choque', async () => {
     const amb = await criarAmbiente()
-    const repor = (data: string, horario: number) =>
-      amb.como('Ana Souza').post('/reposicoes', { disciplinaId: amb.idDisciplina('Banco de Dados II'), turmaId: amb.idTurma('SI 4º'), data, horario })
-    expect((await repor('2026-11-23', 1)).statusCode).toBe(409) // ocupado (Redes)
-    expect((await repor('2026-11-20', 2)).statusCode).toBe(409) // feriado
-    // Choque: SI 4º está vago na sexta 2º horário, mas Bruno dá Testes no ADS 4º nesse horário
-    const choque = await amb.como('Bruno Lima').post('/reposicoes', {
-      disciplinaId: amb.idDisciplina('Engenharia de Software'),
-      turmaId: amb.idTurma('SI 4º'),
-      data: '2026-11-27',
-      horario: 2,
-    })
+    const repor = (data: string) => amb.como('Ana Souza').post('/reposicoes', { disciplinaId: amb.idDisciplina('Banco de Dados II'), turmaId: amb.idTurma('SI 4º'), data })
+    expect((await repor('2026-11-23')).statusCode).toBe(409) // ocupada (Ética)
+    expect((await repor('2026-11-20')).statusCode).toBe(409) // feriado
+    // Choque: SI 4º está vago na sexta, mas Hélio dá Programação Mobile no ADS 4º às sextas
+    const choque = await amb.como('Hélio Martins').post('/reposicoes', { disciplinaId: amb.idDisciplina('Ética e Legislação em TI'), turmaId: amb.idTurma('SI 4º'), data: '2026-11-27' })
     expect(choque.statusCode).toBe(409)
     expect(choque.json().erro).toMatch(/Choque de horário/)
-    // Vaga no SI 4º sexta 2º horário, mas quem não é professor da disciplina não pode repor por ela
-    const r = await amb.como('Bruno Lima').post('/reposicoes', { disciplinaId: amb.idDisciplina('Banco de Dados II'), turmaId: amb.idTurma('SI 4º'), data: '2026-11-27', horario: 2 })
+    const r = await amb.como('Bruno Lima').post('/reposicoes', { disciplinaId: amb.idDisciplina('Banco de Dados II'), turmaId: amb.idTurma('SI 4º'), data: '2026-11-27' })
     expect(r.statusCode).toBe(403)
   })
 
-  it('CA-13: cancelamento exige motivo e vira débito', async () => {
+  it('CA-13: cancelamento exige motivo e debita a noite inteira (2 aulas)', async () => {
     const amb = await criarAmbiente()
-    const id = amb.aulaEm('SI 4º', '2026-11-19', 1).id
+    const id = amb.aulaEm('SI 4º', '2026-11-26', 1).id
     expect((await amb.como('Ana Souza').post(`/aulas/${id}/cancelar`, { motivo: '' })).statusCode).toBe(400)
-    const r = await amb.como('Ana Souza').post(`/aulas/${id}/cancelar`, { motivo: 'Consulta médica' })
-    expect(r.statusCode).toBe(200)
-    const a = amb.aulasEm('SI 4º', '2026-11-19', 1)[0]
-    expect(a.status).toBe('cancelada')
-    expect(a.motivo).toBe('Consulta médica')
+    expect((await amb.como('Ana Souza').post(`/aulas/${id}/cancelar`, { motivo: 'Consulta médica' })).statusCode).toBe(200)
+    for (const h of [1, 2]) {
+      const a = amb.aulasEm('SI 4º', '2026-11-26', h)[0]
+      expect([a.status, a.motivo]).toEqual(['cancelada', 'Consulta médica'])
+    }
     const s = await amb.saldoDe('Banco de Dados II', 'SI 4º')
-    expect([s.canceladas, s.saldo]).toEqual([1, -1])
+    expect([s.canceladas, s.saldo]).toEqual([2, -2])
   })
 
-  it('CA-21: horário de aula cancelada aceita reposição de outro professor', async () => {
+  it('CA-21: noite de aula cancelada aceita reposição de outro professor', async () => {
     const amb = await criarAmbiente()
-    const id = amb.aulaEm('SI 4º', '2026-11-19', 1).id
-    await amb.como('Ana Souza').post(`/aulas/${id}/cancelar`, { motivo: 'Consulta médica' })
+    await amb.como('Ana Souza').post(`/aulas/${amb.aulaEm('SI 4º', '2026-11-26', 1).id}/cancelar`, { motivo: 'Consulta médica' })
+    const vagas = (await amb.como('Bruno Lima').get(`/noites-vagas?disciplinaId=${amb.idDisciplina('Engenharia de Software')}`)).json() as any[]
+    expect(vagas.some((v) => v.data === '2026-11-26')).toBe(true)
 
-    const vagos = (await amb.como('Bruno Lima').get(`/horarios-vagos?disciplinaId=${amb.idDisciplina('Engenharia de Software')}`)).json() as any[]
-    expect(vagos.some((v) => v.data === '2026-11-19' && v.horario === 1)).toBe(true)
-
-    const r = await amb.como('Bruno Lima').post('/reposicoes', {
-      disciplinaId: amb.idDisciplina('Engenharia de Software'),
-      turmaId: amb.idTurma('SI 4º'),
-      data: '2026-11-19',
-      horario: 1,
-    })
+    const r = await amb.como('Bruno Lima').post('/reposicoes', { disciplinaId: amb.idDisciplina('Engenharia de Software'), turmaId: amb.idTurma('SI 4º'), data: '2026-11-26' })
     expect(r.statusCode).toBe(201)
     expect(r.json().informativo[0]).toMatch(/Banco de Dados II — Ana Souza \(cancelada\)/)
+    for (const h of [1, 2]) expect(amb.aulasEm('SI 4º', '2026-11-26', h).map((a) => a.status).sort()).toEqual(['cancelada', 'normal'])
+    expect((await amb.saldoDe('Banco de Dados II', 'SI 4º')).canceladas).toBe(2)
+    expect((await amb.saldoDe('Engenharia de Software', 'SI 4º')).assumidas).toBe(2)
 
-    const noHorario = amb.aulasEm('SI 4º', '2026-11-19', 1)
-    expect(noHorario.map((a) => a.status).sort()).toEqual(['cancelada', 'normal'])
-    expect((await amb.saldoDe('Banco de Dados II', 'SI 4º')).canceladas).toBe(1)
-    expect((await amb.saldoDe('Engenharia de Software', 'SI 4º')).assumidas).toBe(1)
-
-    const painel = (await amb.app.inject({ url: '/api/painel?data=2026-11-19' })).json()
-    const naTV = painel.aulas.filter((a: any) => a.turmaId === amb.idTurma('SI 4º') && a.data === '2026-11-19' && a.horario === 1)
-    expect(naTV).toHaveLength(1)
-    expect(naTV[0]).toMatchObject({ tipo: 'reposicao', disciplina: 'Engenharia de Software', previsto: { disciplina: 'Banco de Dados II (cancelada)' } })
+    const painel = (await amb.app.inject({ url: '/api/painel?data=2026-11-26' })).json()
+    const naTV = painel.aulas.filter((a: any) => a.turmaId === amb.idTurma('SI 4º') && a.data === '2026-11-26')
+    expect(naTV).toHaveLength(2)
+    expect(naTV.every((a: any) => a.tipo === 'reposicao' && a.previsto.disciplina === 'Banco de Dados II (cancelada)')).toBe(true)
   })
 })

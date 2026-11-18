@@ -1,0 +1,1 @@
+ALTER TABLE `aula` ADD `disciplina_responsavel_id` integer REFERENCES disciplina(id);

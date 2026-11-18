@@ -4,8 +4,9 @@ import { aula, disciplina, disciplinaTurma, feriado, horarioFixo, pedido, semest
 import { datasEntre, diaDaSemana } from '../../compartilhado/horarios.js'
 import { conflito, invalido } from '../../compartilhado/erros.js'
 
-export function chaveGrupo(data: string, horario: number, disciplinaId: number) {
-  return `g|${data}|${horario}|d${disciplinaId}`
+/** Grupo = a noite da disciplina naquela data: os dois horários, em todas as turmas dela (RN-11). */
+export function chaveGrupo(data: string, disciplinaId: number) {
+  return `g|${data}|d${disciplinaId}`
 }
 
 /**
@@ -57,8 +58,9 @@ export function gerarCalendario(tx: Tx, opcoes: { substituir?: boolean } = {}) {
           data,
           horario: h.horario,
           sala: h.sala,
-          grupo: chaveGrupo(data, h.horario, h.disciplinaId),
+          grupo: chaveGrupo(data, h.disciplinaId),
           disciplinaPrevistaId: h.disciplinaId,
+          disciplinaResponsavelId: h.disciplinaId,
           disciplinaAtualId: h.disciplinaId,
           professorAtualId: professorDe.get(h.disciplinaId)!,
           status: feriados.has(data) ? 'feriado' : 'normal',

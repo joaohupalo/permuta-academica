@@ -77,12 +77,22 @@ export async function criarAmbiente(agoraInicial = '2026-11-16T10:00:00') {
 
 export type Ambiente = Awaited<ReturnType<typeof criarAmbiente>>
 
-/** Pedido compensatório do roteiro: Ana (BD II, quinta 19/11) ⇄ Bruno (Eng. Software, quarta 18/11), SI 4º. */
-export async function pedidoAnaBruno(amb: Ambiente, horario = 1) {
+/** Pedido compensatório do roteiro: Ana (BD II, quinta 26/11) ⇄ Bruno (Eng. Software, quarta 25/11), SI 4º. */
+export async function pedidoAnaBruno(amb: Ambiente) {
   return amb.como('Ana Souza').post('/pedidos', {
     tipo: 'compensatoria',
-    aulaId: amb.aulaEm('SI 4º', '2026-11-19', horario).id,
+    aulaId: amb.aulaEm('SI 4º', '2026-11-26', 1).id,
     destinatarioId: amb.idPessoa('Bruno Lima'),
-    aulaPedidaId: amb.aulaEm('SI 4º', '2026-11-18', horario).id,
+    aulaPedidaId: amb.aulaEm('SI 4º', '2026-11-25', 1).id,
+  })
+}
+
+/** Pedido pontual: Ana cede a noite de quinta 26/11 ao Bruno (Eng. Software). */
+export async function pontualAnaBruno(amb: Ambiente) {
+  return amb.como('Ana Souza').post('/pedidos', {
+    tipo: 'pontual',
+    aulaId: amb.aulaEm('SI 4º', '2026-11-26', 1).id,
+    destinatarioId: amb.idPessoa('Bruno Lima'),
+    disciplinaDestinoId: amb.idDisciplina('Engenharia de Software'),
   })
 }

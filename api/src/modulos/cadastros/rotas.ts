@@ -28,9 +28,8 @@ const esquemas = {
     professorId: id,
     totalAulas: z.coerce.number().int().min(1),
     turmaIds: z.array(id).min(1, 'escolha ao menos uma turma'),
-    horarios: z
-      .array(z.object({ diaSemana: z.number().int().min(1).max(6), horario: z.union([z.literal(1), z.literal(2)]), sala: z.string().trim().default('') }))
-      .min(1, 'informe ao menos um horário fixo'),
+    // RN-11: a disciplina ocupa sempre a noite inteira (os dois horários).
+    noites: z.array(z.object({ diaSemana: z.number().int().min(1).max(6), sala: z.string().trim().default('') })).min(1, 'informe ao menos uma noite'),
   }),
   feriado: z.object({ data: dataISO, descricao: z.string().trim().min(1, 'informe a descrição') }),
 }
@@ -44,11 +43,10 @@ function normalizarData(valor: string) {
 
 /** Choque na grade fixa: a turma ou o professor já ocupados nesse dia e horário por outra disciplina. */
 function validarGrade(tx: Tx, dados: z.infer<typeof esquemas.disciplina>, ignorarId?: number) {
-  const chaves = new Set<string>()
-  for (const h of dados.horarios) {
-    const k = `${h.diaSemana}|${h.horario}`
-    if (chaves.has(k)) throw invalido('Há horários fixos repetidos.')
-    chaves.add(k)
+  const chaves = new Set<number>()
+  for (const n of dados.noites) {
+    if (chaves.has(n.diaSemana)) throw invalido('Há noites repetidas.')
+    chaves.add(n.diaSemana)
   }
   const outras = tx
     .select({ id: disciplina.id, nome: disciplina.nome, professorId: disciplina.professorId, diaSemana: horarioFixo.diaSemana, horario: horarioFixo.horario, turmaId: disciplinaTurma.turmaId })
@@ -58,8 +56,8 @@ function validarGrade(tx: Tx, dados: z.infer<typeof esquemas.disciplina>, ignora
     .where(ignorarId ? ne(disciplina.id, ignorarId) : undefined)
     .all()
   for (const o of outras) {
-    if (!chaves.has(`${o.diaSemana}|${o.horario}`)) continue
-    const quando = `${NOMES_DIAS[o.diaSemana]}, ${o.horario}º horário`
+    if (!chaves.has(o.diaSemana)) continue
+    const quando = `${NOMES_DIAS[o.diaSemana]} à noite`
     if (dados.turmaIds.includes(o.turmaId)) throw conflito(`A turma já tem ${o.nome} em ${quando}.`)
     if (o.professorId === dados.professorId) throw conflito(`O professor já leciona ${o.nome} em ${quando}.`)
   }
@@ -74,7 +72,9 @@ function salvarDisciplina(tx: Tx, dados: z.infer<typeof esquemas.disciplina>, ex
   tx.delete(disciplinaTurma).where(eq(disciplinaTurma.disciplinaId, discId)).run()
   tx.delete(horarioFixo).where(eq(horarioFixo.disciplinaId, discId)).run()
   tx.insert(disciplinaTurma).values(dados.turmaIds.map((turmaId) => ({ disciplinaId: discId, turmaId }))).run()
-  tx.insert(horarioFixo).values(dados.horarios.map((h) => ({ ...h, disciplinaId: discId }))).run()
+  tx.insert(horarioFixo)
+    .values(dados.noites.flatMap((n) => [1, 2].map((horario) => ({ diaSemana: n.diaSemana, horario, sala: n.sala, disciplinaId: discId }))))
+    .run()
   return discId
 }
 
@@ -184,7 +184,7 @@ export function rotasCadastros(app: FastifyInstance, ctx: Contexto) {
       ...d,
       professor,
       turmaIds: turmas.filter((t) => t.disciplinaId === d.id).map((t) => t.turmaId),
-      horarios: horarios.filter((h) => h.disciplinaId === d.id).map(({ diaSemana, horario, sala }) => ({ diaSemana, horario, sala })),
+      noites: horarios.filter((h) => h.disciplinaId === d.id && h.horario === 1).map(({ diaSemana, sala }) => ({ diaSemana, sala })),
     }))
   })
   app.post('/disciplinas', admin, async (req, res) => {

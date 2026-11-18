@@ -1,7 +1,7 @@
 import { and, eq, gte, inArray, isNull } from 'drizzle-orm'
 import type { Contexto, Tx } from '../../contexto.js'
 import { aula, disciplina, disciplinaTurma, feriado, pedido, semestre, turma, usuario } from '../../db/schema.js'
-import { datasEntre, diaDaSemana, formatarData, inicioDaAula, paraISO } from '../../compartilhado/horarios.js'
+import { datasEntre, diaDaSemana, formatarData, inicioDaAula, NOMES_DIAS, paraISO } from '../../compartilhado/horarios.js'
 import { conflito, invalido, naoEncontrado, proibido } from '../../compartilhado/erros.js'
 import { registrar } from '../historico/registrar.js'
 import { carregarNomes, gerarInformativo } from '../informativo/gerar.js'
@@ -12,7 +12,9 @@ import {
   buscarAula,
   buscarDisciplina,
   exigirUtilizavel,
+  noiteInteira,
   professorOcupado,
+  professorOcupadoNoGrupo,
   resumirGrupo,
   turmasDaDisciplina,
 } from './consultas.js'
@@ -22,7 +24,8 @@ interface Usuario {
   nome: string
 }
 
-const curto = (data: string, horario: number) => `${formatarData(data).slice(0, 5)} ${horario}º horário`
+/** Toda operação é da noite inteira (RN-11). */
+const noiteDe = (data: string) => `${NOMES_DIAS[diaDaSemana(data)].replace('-feira', '')} ${formatarData(data).slice(0, 5)} (noite)`
 
 function nomeDe(tx: Tx, id: number) {
   return tx.select({ nome: usuario.nome }).from(usuario).where(eq(usuario.id, id)).get()?.nome ?? '?'
@@ -42,12 +45,21 @@ function travarGrupo(tx: Tx, grupo: string, pedidoId: number, esperado: number) 
  * Coloca a disciplina nas aulas de um grupo (RN-02): cada turma atendida por ela recebe a aula;
  * as outras turmas ficam vagas e saem do grupo.
  */
-function aplicarDisciplina(tx: Tx, linhas: Aula[], disciplinaId: number) {
+function aplicarDisciplina(tx: Tx, linhas: Aula[], disciplinaId: number, transferirResponsavel: boolean) {
   const d = buscarDisciplina(tx, disciplinaId)
   const atende = turmasDaDisciplina(tx, disciplinaId)
   for (const l of linhas) {
     if (atende.has(l.turmaId)) {
-      tx.update(aula).set({ disciplinaAtualId: d.id, professorAtualId: d.professorId, status: 'normal' }).where(eq(aula.id, l.id)).run()
+      tx.update(aula)
+        .set({
+          disciplinaAtualId: d.id,
+          professorAtualId: d.professorId,
+          status: 'normal',
+          // Compensatória: a aula passa a pertencer à nova disciplina (saldo neutro). Pontual: continua de quem cedeu.
+          ...(transferirResponsavel ? { disciplinaResponsavelId: d.id } : {}),
+        })
+        .where(eq(aula.id, l.id))
+        .run()
     } else {
       tx.update(aula)
         .set({ disciplinaAtualId: null, professorAtualId: null, status: 'vaga', grupo: `v|${l.id}` })
@@ -64,7 +76,8 @@ export function candidatos(ctx: Contexto, usuarioId: number, aulaId: number) {
   const { db } = ctx
   const a = buscarAula(db, aulaId)
   if (a.professorAtualId !== usuarioId) throw proibido('Só o professor desta aula pode oferecê-la.')
-  const turmasA = [...new Set(aulasDoGrupo(db, a.grupo).map((l) => l.turmaId))]
+  const grupoA = aulasDoGrupo(db, a.grupo)
+  const turmasA = [...new Set(grupoA.map((l) => l.turmaId))]
   const n = carregarNomes(db)
 
   const linhas = db
@@ -80,7 +93,7 @@ export function candidatos(ctx: Contexto, usuarioId: number, aulaId: number) {
     const p = porProfessor.get(l.professorId) ?? {
       professorId: l.professorId,
       nome: n.pessoa(l.professorId)!,
-      disponivel: !professorOcupado(db, l.professorId, a.data, a.horario, [a.grupo]),
+      disponivel: !professorOcupadoNoGrupo(db, l.professorId, grupoA, [a.grupo]),
       disciplinas: new Map(),
     }
     const d = p.disciplinas.get(l.id) ?? { id: l.id, nome: l.nome, turmas: [] }
@@ -127,7 +140,7 @@ export function contrapartidas(ctx: Contexto, usuarioId: number, aulaId: number,
     const grupoB = aulasDoGrupo(db, b.grupo)
     if (grupoB.some((x) => x.pedidoPendenteId)) continue
     if (!grupoB.some((x) => atendeA.has(x.turmaId))) continue
-    if (professorOcupado(db, usuarioId, b.data, b.horario, [a.grupo, b.grupo])) continue
+    if (professorOcupadoNoGrupo(db, usuarioId, grupoB, [a.grupo, b.grupo])) continue
     resultado.push({
       aulaId: b.id,
       data: b.data,
@@ -139,8 +152,13 @@ export function contrapartidas(ctx: Contexto, usuarioId: number, aulaId: number,
   return resultado
 }
 
-/** Horários vagos em que o professor pode repor uma aula da disciplina (RF-09). */
-export function horariosVagos(ctx: Contexto, usuarioId: number, disciplinaId: number, turmaId?: number) {
+/** Uma noite está vaga na turma se nenhum dos dois horários tem aula ativa (vazio, vaga ou cancelada). */
+function noiteLivre(linhas: Aula[]) {
+  return linhas.every((l) => l.status === 'cancelada' || (l.status === 'vaga' && !l.pedidoPendenteId))
+}
+
+/** Noites vagas em que o professor pode repor uma aula da disciplina (RF-09, RN-11). */
+export function noitesVagas(ctx: Contexto, usuarioId: number, disciplinaId: number, turmaId?: number) {
   const { db } = ctx
   const agora = ctx.agora()
   const d = buscarDisciplina(db, disciplinaId)
@@ -152,46 +170,41 @@ export function horariosVagos(ctx: Contexto, usuarioId: number, disciplinaId: nu
 
   const inicio = paraISO(agora) > sem.inicio ? paraISO(agora) : sem.inicio
   const feriados = new Set(db.select({ data: feriado.data }).from(feriado).all().map((f) => f.data))
-  const existentes = new Map(
-    db
-      .select()
-      .from(aula)
-      .where(and(inArray(aula.turmaId, turmas), gte(aula.data, inicio)))
-      .all()
-      .sort((x, y) => Number(x.status !== 'cancelada') - Number(y.status !== 'cancelada'))
-      .map((l) => [`${l.turmaId}|${l.data}|${l.horario}`, l]),
-  )
+  const porNoite = new Map<string, Aula[]>()
+  for (const l of db.select().from(aula).where(and(inArray(aula.turmaId, turmas), gte(aula.data, inicio))).all()) {
+    const k = `${l.turmaId}|${l.data}`
+    porNoite.set(k, [...(porNoite.get(k) ?? []), l])
+  }
   const ocupado = new Set(
     db
       .select()
       .from(aula)
       .where(and(eq(aula.professorAtualId, usuarioId), eq(aula.status, 'normal'), gte(aula.data, inicio)))
       .all()
-      .map((l) => `${l.data}|${l.horario}`),
+      .map((l) => l.data),
   )
   const n = carregarNomes(db)
   const resultado = []
   for (const data of datasEntre(inicio, sem.fim)) {
     const dia = diaDaSemana(data)
     if (dia === 0 || dia === 6 || feriados.has(data)) continue
-    for (const horario of [1, 2]) {
-      if (inicioDaAula(data, horario) <= agora || ocupado.has(`${data}|${horario}`)) continue
-      for (const t of turmas) {
-        const l = existentes.get(`${t}|${data}|${horario}`)
-        if (l && l.status !== 'cancelada' && (l.status !== 'vaga' || l.pedidoPendenteId)) continue
-        resultado.push({
-          turmaId: t,
-          turma: n.turma(t),
-          data,
-          horario,
-          observacao: !l
-            ? null
-            : l.status === 'cancelada'
-              ? `aula de ${n.disciplina(l.disciplinaAtualId)} cancelada`
-              : `ficou vaga (era ${n.disciplina(l.disciplinaPrevistaId)})`,
-        })
-        if (resultado.length >= 120) return resultado
-      }
+    if (inicioDaAula(data, 1) <= agora || ocupado.has(data)) continue
+    for (const t of turmas) {
+      const linhas = porNoite.get(`${t}|${data}`) ?? []
+      if (!noiteLivre(linhas)) continue
+      const cancelada = linhas.find((l) => l.status === 'cancelada')
+      const vaga = linhas.find((l) => l.status === 'vaga')
+      resultado.push({
+        turmaId: t,
+        turma: n.turma(t),
+        data,
+        observacao: cancelada
+          ? `aula de ${n.disciplina(cancelada.disciplinaAtualId)} cancelada`
+          : vaga
+            ? `ficou vaga (era ${n.disciplina(vaga.disciplinaPrevistaId)})`
+            : null,
+      })
+      if (resultado.length >= 80) return resultado
     }
   }
   return resultado
@@ -233,10 +246,10 @@ export function criarPedido(ctx: Contexto, u: Usuario, e: EntradaPedido) {
       if (!grupoB.some((l) => turmasA.has(l.turmaId))) throw invalido('Trocas só podem acontecer entre professores da mesma turma.')
       const atendeA = turmasDaDisciplina(tx, a.disciplinaAtualId!)
       if (!grupoB.some((l) => atendeA.has(l.turmaId))) throw invalido('Sua disciplina não atende a turma da aula pedida.')
-      if (professorOcupado(tx, e.destinatarioId, a.data, a.horario, [a.grupo, b.grupo]))
-        throw conflito(`Choque de horário: ${destinatario.nome} já tem aula em ${curto(a.data, a.horario)}.`)
-      if (professorOcupado(tx, u.id, b.data, b.horario, [a.grupo, b.grupo]))
-        throw conflito(`Choque de horário: você já tem aula em ${curto(b.data, b.horario)}.`)
+      if (professorOcupadoNoGrupo(tx, e.destinatarioId, grupoA, [a.grupo, b.grupo]))
+        throw conflito(`Choque de horário: ${destinatario.nome} já tem aula em ${noiteDe(a.data)}.`)
+      if (professorOcupadoNoGrupo(tx, u.id, grupoB, [a.grupo, b.grupo]))
+        throw conflito(`Choque de horário: você já tem aula em ${noiteDe(b.data)}.`)
       disciplinaDestinoId = b.disciplinaAtualId!
     } else {
       if (!e.disciplinaDestinoId) throw invalido('Escolha a disciplina que o colega vai ministrar.')
@@ -244,8 +257,8 @@ export function criarPedido(ctx: Contexto, u: Usuario, e: EntradaPedido) {
       if (d.professorId !== e.destinatarioId) throw invalido('A disciplina escolhida não é do colega indicado.')
       const atende = turmasDaDisciplina(tx, d.id)
       if (!grupoA.some((l) => atende.has(l.turmaId))) throw invalido('Trocas só podem acontecer entre professores da mesma turma.')
-      if (professorOcupado(tx, e.destinatarioId, a.data, a.horario, [a.grupo]))
-        throw conflito(`Choque de horário: ${destinatario.nome} já tem aula em ${curto(a.data, a.horario)}.`)
+      if (professorOcupadoNoGrupo(tx, e.destinatarioId, grupoA, [a.grupo]))
+        throw conflito(`Choque de horário: ${destinatario.nome} já tem aula em ${noiteDe(a.data)}.`)
       disciplinaDestinoId = d.id
     }
 
@@ -273,8 +286,8 @@ export function criarPedido(ctx: Contexto, u: Usuario, e: EntradaPedido) {
 
     const desc =
       e.tipo === 'compensatoria'
-        ? `${u.nome} pediu troca compensatória a ${destinatario.nome}: ${resumo.ofertada.turmas.join('/')} ${curto(a.data, a.horario)} ⇄ ${curto(resumo.pedida!.data, resumo.pedida!.horario)}`
-        : `${u.nome} ofereceu a ${destinatario.nome} a aula de ${resumo.ofertada.turmas.join('/')} em ${curto(a.data, a.horario)} (troca pontual, ${resumo.disciplinaDestino})`
+        ? `${u.nome} pediu troca compensatória a ${destinatario.nome}: ${resumo.ofertada.turmas.join('/')} ${noiteDe(a.data)} ⇄ ${noiteDe(resumo.pedida!.data)}`
+        : `${u.nome} ofereceu a ${destinatario.nome} a noite de ${resumo.ofertada.turmas.join('/')} em ${noiteDe(a.data)} (troca pontual, ${resumo.disciplinaDestino})`
     registrar(tx, agora, { usuarioId: u.id, tipo: 'pedido_criado', descricao: desc, pedidoId: p.id })
     return p
   })
@@ -311,14 +324,15 @@ export function responderPedido(ctx: Contexto, u: Usuario, pedidoId: number, aca
 
     if (acao === 'aprovar') {
       for (const l of travadas) if (inicioDaAula(l.data, l.horario) <= agora) throw conflito('Uma das aulas já começou; o pedido expirou.')
-      if (professorOcupado(tx, p.destinatarioId, ofertada.data, ofertada.horario, [ofertada.grupo, grupoB[0]?.grupo ?? '']))
+      if (professorOcupadoNoGrupo(tx, p.destinatarioId, grupoA, [ofertada.grupo, grupoB[0]?.grupo ?? '']))
         throw conflito('Choque de horário: você já tem outra aula nesse horário.')
-      if (grupoB.length && professorOcupado(tx, p.solicitanteId, grupoB[0].data, grupoB[0].horario, [ofertada.grupo, grupoB[0].grupo]))
+      if (grupoB.length && professorOcupadoNoGrupo(tx, p.solicitanteId, grupoB, [ofertada.grupo, grupoB[0].grupo]))
         throw conflito('Choque de horário: quem pediu já tem outra aula nesse horário.')
 
       const disciplinaA = ofertada.disciplinaAtualId!
-      aplicarDisciplina(tx, grupoA, p.disciplinaDestinoId)
-      if (p.tipo === 'compensatoria') aplicarDisciplina(tx, grupoB, disciplinaA)
+      const compensatoria = p.tipo === 'compensatoria'
+      aplicarDisciplina(tx, grupoA, p.disciplinaDestinoId, compensatoria)
+      if (compensatoria) aplicarDisciplina(tx, grupoB, disciplinaA, true)
     }
 
     tx.update(aula).set({ pedidoPendenteId: null }).where(eq(aula.pedidoPendenteId, p.id)).run()
@@ -335,7 +349,7 @@ export function responderPedido(ctx: Contexto, u: Usuario, pedidoId: number, aca
     registrar(tx, agora, {
       usuarioId: u.id,
       tipo: `pedido_${STATUS_DA_ACAO[acao]}` as const,
-      descricao: `${descricoes[acao]} (${p.resumo.ofertada.turmas.join('/')} ${curto(p.resumo.ofertada.data, p.resumo.ofertada.horario)})`,
+      descricao: `${descricoes[acao]} (${p.resumo.ofertada.turmas.join('/')} ${noiteDe(p.resumo.ofertada.data)})`,
       pedidoId: p.id,
       informativo,
     })
@@ -376,11 +390,10 @@ export interface EntradaReposicao {
   disciplinaId: number
   turmaId: number
   data: string
-  horario: number
   sala?: string
 }
 
-/** RF-09: reposição em horário vago, sem aprovação (CA-11, CA-12). */
+/** RF-09: reposição numa noite vaga (os dois horários), sem aprovação (CA-11, CA-12, CA-21). */
 export function reporAula(ctx: Contexto, u: Usuario, e: EntradaReposicao) {
   const resultado = ctx.db.transaction((tx) => {
     const agora = ctx.agora()
@@ -394,55 +407,57 @@ export function reporAula(ctx: Contexto, u: Usuario, e: EntradaReposicao) {
     const dia = diaDaSemana(e.data)
     if (dia === 0 || dia === 6) throw invalido('Não há aulas no fim de semana.')
     if (tx.select().from(feriado).where(eq(feriado.data, e.data)).get()) throw conflito('Não é possível repor aula em feriado.')
-    if (inicioDaAula(e.data, e.horario) <= agora) throw conflito('Esse horário já começou ou já passou.')
-    if (professorOcupado(tx, u.id, e.data, e.horario)) throw conflito('Choque de horário: você já tem aula nesse horário.')
+    if (inicioDaAula(e.data, 1) <= agora) throw conflito('Essa noite já começou ou já passou.')
+    if (professorOcupadoNoGrupo(tx, u.id, noiteInteira(e.data))) throw conflito('Choque de horário: você já tem aula nessa noite.')
 
-    // A aula cancelada continua registrada (débito de quem cancelou); o horário dela fica livre (RN-06).
-    const noHorario = tx
-      .select()
-      .from(aula)
-      .where(and(eq(aula.turmaId, e.turmaId), eq(aula.data, e.data), eq(aula.horario, e.horario)))
-      .all()
-    const existente = noHorario.find((l) => l.status !== 'cancelada')
-    const cancelada = noHorario.find((l) => l.status === 'cancelada')
-    let id: number
+    const linhas = tx.select().from(aula).where(and(eq(aula.turmaId, e.turmaId), eq(aula.data, e.data))).all()
+    if (!noiteLivre(linhas)) throw conflito('Essa noite não está vaga nessa turma.')
+
+    // A noite de reposição forma um grupo próprio. Aula cancelada continua registrada (débito de quem cancelou).
+    const grupo = `r|${e.turmaId}|${e.data}`
+    const ids: number[] = []
     const antes: Aula[] = []
-    if (existente) {
-      if (existente.status !== 'vaga' || existente.pedidoPendenteId) throw conflito('Esse horário não está vago nessa turma.')
-      antes.push(existente)
-      const r = tx
-        .update(aula)
-        .set({ disciplinaAtualId: d.id, professorAtualId: u.id, status: 'normal', sala: e.sala || existente.sala, grupo: `r|${existente.id}` })
-        .where(and(eq(aula.id, existente.id), eq(aula.status, 'vaga'), isNull(aula.pedidoPendenteId)))
-        .run()
-      if (r.changes !== 1) throw conflito('Esse horário acabou de ser ocupado.')
-      id = existente.id
-    } else {
-      id = tx
-        .insert(aula)
-        .values({
-          turmaId: e.turmaId,
-          data: e.data,
-          horario: e.horario,
-          sala: e.sala || cancelada?.sala || '',
-          grupo: `r|${e.turmaId}|${e.data}|${e.horario}`,
-          disciplinaPrevistaId: null,
-          disciplinaAtualId: d.id,
-          professorAtualId: u.id,
-          status: 'normal',
-        })
-        .returning({ id: aula.id })
-        .get().id
-      if (cancelada) antes.push({ ...cancelada, id })
+    for (const horario of [1, 2]) {
+      const vaga = linhas.find((l) => l.horario === horario && l.status === 'vaga')
+      const cancelada = linhas.find((l) => l.horario === horario && l.status === 'cancelada')
+      if (vaga) {
+        antes.push(vaga)
+        const r = tx
+          .update(aula)
+          .set({ disciplinaAtualId: d.id, professorAtualId: u.id, status: 'normal', sala: e.sala || vaga.sala, grupo })
+          .where(and(eq(aula.id, vaga.id), eq(aula.status, 'vaga'), isNull(aula.pedidoPendenteId)))
+          .run()
+        if (r.changes !== 1) throw conflito('Essa noite acabou de ser ocupada.')
+        ids.push(vaga.id)
+      } else {
+        const id = tx
+          .insert(aula)
+          .values({
+            turmaId: e.turmaId,
+            data: e.data,
+            horario,
+            sala: e.sala || cancelada?.sala || '',
+            grupo,
+            disciplinaPrevistaId: null,
+            disciplinaResponsavelId: null,
+            disciplinaAtualId: d.id,
+            professorAtualId: u.id,
+            status: 'normal',
+          })
+          .returning({ id: aula.id })
+          .get().id
+        if (cancelada) antes.push({ ...cancelada, id })
+        ids.push(id)
+      }
     }
-    const informativo = gerarInformativo(tx, antes, aulasPorIds(tx, [id]))
+    const informativo = gerarInformativo(tx, antes, aulasPorIds(tx, ids))
     registrar(tx, agora, {
       usuarioId: u.id,
       tipo: 'reposicao',
-      descricao: `${u.nome} registrou reposição de ${d.nome} para ${t.nome} em ${curto(e.data, e.horario)}`,
+      descricao: `${u.nome} registrou reposição de ${d.nome} para ${t.nome} em ${noiteDe(e.data)} (2 aulas)`,
       informativo,
     })
-    return { aulaId: id, informativo }
+    return { aulaIds: ids, informativo }
   })
   ctx.hub.publicar('aulas')
   return resultado
@@ -463,13 +478,13 @@ export function cancelarAula(ctx: Contexto, u: Usuario, aulaId: number, motivo: 
       .set({ status: 'cancelada', motivo: m })
       .where(and(eq(aula.grupo, a.grupo), eq(aula.status, 'normal'), isNull(aula.pedidoPendenteId)))
       .run()
-    if (r.changes !== grupo.length) throw conflito('A aula acabou de ser alterada por outra operação.')
+    if (r.changes !== grupo.length) throw conflito('A noite acabou de ser alterada por outra operação.')
     const informativo = gerarInformativo(tx, grupo, aulasPorIds(tx, grupo.map((l) => l.id)))
     const n = carregarNomes(tx)
     registrar(tx, agora, {
       usuarioId: u.id,
       tipo: 'aula_cancelada',
-      descricao: `${u.nome} cancelou a aula de ${n.disciplina(a.disciplinaAtualId)} (${grupo.map((l) => n.turma(l.turmaId)).join('/')}) em ${curto(a.data, a.horario)} — motivo: ${m}`,
+      descricao: `${u.nome} cancelou a noite de ${n.disciplina(a.disciplinaAtualId)} (${[...new Set(grupo.map((l) => n.turma(l.turmaId)))].join('/')}, 2 aulas) em ${noiteDe(a.data)} — motivo: ${m}`,
       informativo,
     })
     return { informativo }

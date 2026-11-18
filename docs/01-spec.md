@@ -63,7 +63,7 @@ Login por e-mail e senha. Na demonstração, contas `@unimater.edu` criadas pelo
 
 ### Módulo 4 — Divulgação
 - **RF-15** Após uma troca aprovada, reposição ou cancelamento, o sistema gera um **informativo** padronizado por turma afetada (data, horário, turma, aula prevista, aula que será ministrada, professor), com botões **Copiar** e **Compartilhar no WhatsApp** (link `wa.me` com o texto pronto).
-- **RF-16** **Painel da TV** (rota pública): grade da **semana corrente** de todas as turmas de SI e ADS — turma, horário, disciplina, professor e sala —, destacando aulas trocadas (com a disciplina originalmente prevista), reposições, aulas vagas, canceladas e feriados. Rola automaticamente se não couber, mostra relógio e vira de dia/semana sozinho à meia-noite. Aceita `?data=AAAA-MM-DD` para simular outra data.
+- **RF-16** **Painel da TV** (rota pública): grade da **semana corrente** de todas as turmas de SI e ADS — turma, horário, disciplina, professor e sala —, destacando aulas trocadas (com a disciplina originalmente prevista), reposições, aulas vagas, canceladas e feriados. Rola automaticamente se não couber, mostra relógio e vira de dia/semana sozinho à meia-noite. Aceita `?data=AAAA-MM-DD` para fixar a semana que contém essa data; o destaque de "hoje" e os dias já passados seguem sempre o relógio real.
 - **RF-17** A API expõe os dados do painel em `GET /api/painel`, para que o sistema real da TV possa consumi-los.
 
 ### Transversal

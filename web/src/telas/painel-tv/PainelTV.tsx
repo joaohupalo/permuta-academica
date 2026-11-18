@@ -69,7 +69,8 @@ export function PainelTV() {
   if (!data) return <div className="flex h-screen items-center justify-center bg-[#041c31] text-2xl text-slate-300">Carregando painel…</div>
 
   const mapa = new Map<string, AulaPainel>((data.aulas as AulaPainel[]).map((a) => [`${a.turmaId}|${a.data}|${a.horario}`, a]))
-  const hojeISO = data.hoje as string
+  // "Hoje" e dias passados seguem sempre o relógio real; ?data= só escolhe qual semana mostrar.
+  const hojeISO = hoje()
 
   return (
     <div className="flex h-screen flex-col bg-[#041c31] text-white">
@@ -182,7 +183,7 @@ export function PainelTV() {
         <div className="flex items-center gap-2">
           <span className={`h-2 w-2 rounded-full ${conectado ? 'bg-emerald-400' : 'bg-slate-500'}`} />
           {conectado ? 'Atualização em tempo real' : 'Reconectando…'} · última às {new Date(dataUpdatedAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
-          {dataFixa && <span className="ml-2 rounded bg-amber-500/20 px-2 text-amber-300">data simulada: {dataCurta(dataFixa)}</span>}
+          {dataFixa && <span className="ml-2 rounded bg-amber-500/20 px-2 text-amber-300">semana fixada: {dataCurta(data.semana.inicio)} a {dataCurta(data.semana.fim)}</span>}
         </div>
       </footer>
     </div>
